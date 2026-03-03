@@ -1,0 +1,56 @@
+# ============================================
+# Render Blueprint - HRMS Backend + PostgreSQL
+# ============================================
+# Deploy with: https://render.com/deploy
+#
+# This file defines the infrastructure for the HRMS backend:
+#   1. A PostgreSQL database (free tier)
+#   2. A Node.js web service for the Express API
+#
+# After deploying, set the frontend VITE_API_URL to:
+#   https://<your-backend-service>.onrender.com/api
+
+databases:
+  - name: hrms-db
+    plan: free
+    databaseName: hrms_db
+    user: hrms_user
+    region: oregon
+
+services:
+  - type: web
+    name: hrms-backend
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: node dist/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: HOST
+        value: "0.0.0.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hrms-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: "30d"
+      - key: BCRYPT_SALT_ROUNDS
+        value: "12"
+      - key: CORS_ORIGIN
+        sync: false # Set this manually to your Vercel frontend URL after deploying
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "200"
+      - key: LOG_LEVEL
+        value: "info"
