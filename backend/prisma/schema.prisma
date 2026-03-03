@@ -1,0 +1,392 @@
+// ============================================
+// HRMS Database Schema - Prisma ORM
+// ============================================
+// This schema defines all database models for the
+// Human Resource Management System.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Enums
+// ============================================
+
+enum Role {
+  ADMIN
+  HR
+  EMPLOYEE
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+  TERMINATED
+  PROBATION
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  EARNED
+  MATERNITY
+  PATERNITY
+  UNPAID
+  COMPENSATORY
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  ON_LEAVE
+  HOLIDAY
+  WEEKEND
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
+}
+
+// ============================================
+// User Model - Authentication & Authorization
+// ============================================
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  role          Role     @default(EMPLOYEE)
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
+  refreshToken  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  employee      Employee?
+
+  @@map("users")
+}
+
+// ============================================
+// Employee Model - Core employee information
+// ============================================
+
+model Employee {
+  id              String          @id @default(uuid())
+  employeeId      String          @unique  // e.g., EMP-001
+  firstName       String
+  lastName        String
+  email           String          @unique
+  phone           String?
+  dateOfBirth     DateTime?
+  gender          Gender?
+  maritalStatus   MaritalStatus?
+  address         String?
+  city            String?
+  state           String?
+  country         String?
+  zipCode         String?
+  avatar          String?         // URL to profile picture
+
+  // Employment details
+  designation     String
+  status          EmployeeStatus  @default(ACTIVE)
+  joiningDate     DateTime
+  confirmationDate DateTime?
+  terminationDate DateTime?
+  salary          Decimal?        @db.Decimal(12, 2)
+  employmentType  String?         @default("Full-Time") // Full-Time, Part-Time, Contract, Intern
+
+  // Emergency contact
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  emergencyContactRelation String?
+
+  // Bank details
+  bankName        String?
+  bankAccountNo   String?
+  bankIfscCode    String?
+
+  // Timestamps
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  userId          String?         @unique
+  user            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  departmentId    String?
+  department      Department?     @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  managerId       String?
+  manager         Employee?       @relation("ManagerSubordinates", fields: [managerId], references: [id], onDelete: SetNull)
+  subordinates    Employee[]      @relation("ManagerSubordinates")
+
+  leaveRequests   Leave[]
+  attendance      Attendance[]
+  leaveBalances   LeaveBalance[]
+  documents       Document[]
+  performanceReviews PerformanceReview[]
+
+  @@index([departmentId])
+  @@index([managerId])
+  @@index([status])
+  @@index([employeeId])
+  @@map("employees")
+}
+
+// ============================================
+// Department Model
+// ============================================
+
+model Department {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  code        String     @unique  // e.g., "ENG", "HR", "MKT"
+  description String?
+  isActive    Boolean    @default(true)
+  headId      String?    // Department head employee ID (not a FK to avoid circular)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  employees   Employee[]
+
+  @@map("departments")
+}
+
+// ============================================
+// Leave Model - Leave requests
+// ============================================
+
+model Leave {
+  id          String      @id @default(uuid())
+  leaveType   LeaveType
+  startDate   DateTime
+  endDate     DateTime
+  totalDays   Float       // Supports half-day leaves (0.5)
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  remarks     String?     // Admin/HR remarks on approval/rejection
+
+  appliedOn   DateTime    @default(now())
+  approvedOn  DateTime?
+  approvedBy  String?     // ID of the user who approved/rejected
+
+  // Relations
+  employeeId  String
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("leaves")
+}
+
+// ============================================
+// Leave Balance Model - Tracks remaining leaves
+// ============================================
+
+model LeaveBalance {
+  id          String    @id @default(uuid())
+  leaveType   LeaveType
+  totalLeaves Float     @default(0)
+  usedLeaves  Float     @default(0)
+  year        Int       // Calendar year
+
+  // Relations
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([employeeId, leaveType, year])
+  @@index([employeeId])
+  @@map("leave_balances")
+}
+
+// ============================================
+// Attendance Model - Daily attendance records
+// ============================================
+
+model Attendance {
+  id          String           @id @default(uuid())
+  date        DateTime         @db.Date
+  clockIn     DateTime?
+  clockOut    DateTime?
+  totalHours  Float?           // Calculated hours worked
+  status      AttendanceStatus @default(PRESENT)
+  notes       String?
+  ipAddress   String?          // IP address from which clock-in was done
+  location    String?          // Optional location data
+
+  // Relations
+  employeeId  String
+  employee    Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@index([status])
+  @@map("attendance")
+}
+
+// ============================================
+// Document Model - Employee documents
+// ============================================
+
+model Document {
+  id          String   @id @default(uuid())
+  name        String
+  type        String   // e.g., "ID Proof", "Resume", "Offer Letter", "Contract"
+  fileUrl     String
+  fileSize    Int?     // File size in bytes
+  mimeType    String?
+
+  // Relations
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  uploadedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([employeeId])
+  @@map("documents")
+}
+
+// ============================================
+// Performance Review Model
+// ============================================
+
+model PerformanceReview {
+  id            String   @id @default(uuid())
+  reviewPeriod  String   // e.g., "Q1 2024", "2024"
+  rating        Float    // 1-5 scale
+  strengths     String?
+  areasToImprove String?
+  goals         String?
+  comments      String?
+  reviewedBy    String?  // Reviewer's name or ID
+
+  // Relations
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([employeeId])
+  @@map("performance_reviews")
+}
+
+// ============================================
+// Holiday Model - Company holidays
+// ============================================
+
+model Holiday {
+  id          String   @id @default(uuid())
+  name        String
+  date        DateTime @db.Date
+  description String?
+  isOptional  Boolean  @default(false)
+  year        Int
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([date])
+  @@index([year])
+  @@map("holidays")
+}
+
+// ============================================
+// Announcement Model - Company announcements
+// ============================================
+
+model Announcement {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  priority    String   @default("normal") // low, normal, high, urgent
+  isActive    Boolean  @default(true)
+  publishedBy String?  // Name or ID of publisher
+  expiresAt   DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("announcements")
+}
+
+// ============================================
+// Settings Model - System-wide settings (key-value)
+// ============================================
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  group       String   @default("general") // general, leave, attendance, email, etc.
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([group])
+  @@map("settings")
+}
+
+// ============================================
+// Audit Log Model - Track important actions
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // e.g., "CREATE", "UPDATE", "DELETE", "LOGIN"
+  entity      String   // e.g., "Employee", "Leave", "Attendance"
+  entityId    String?
+  details     String?  // JSON string with change details
+  userId      String?
+  userEmail   String?
+  ipAddress   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

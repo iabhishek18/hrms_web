@@ -1,0 +1,73 @@
+# ============================================
+# HRMS Backend - Multi-stage Dockerfile
+# ============================================
+
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files first for better layer caching
+COPY backend/package.json backend/package-lock.json* ./
+
+# Install all dependencies (including devDependencies for build)
+RUN npm ci
+
+# Copy prisma schema first to generate client
+COPY backend/prisma ./prisma
+RUN npx prisma generate
+
+# Copy the rest of the backend source code
+COPY backend/tsconfig.json ./
+COPY backend/src ./src
+
+# Build TypeScript to JavaScript
+RUN npm run build
+
+# ============================================
+# Stage 2: Production
+FROM node:20-alpine AS production
+
+# Add labels for container metadata
+LABEL maintainer="HRMS Team"
+LABEL description="HRMS Backend API Server"
+LABEL version="1.0.0"
+
+# Create a non-root user for security
+RUN addgroup -g 1001 -S hrms && \
+    adduser -S hrms -u 1001 -G hrms
+
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Copy package files and install production-only dependencies
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy prisma schema and generate client for production
+COPY backend/prisma ./prisma
+RUN npx prisma generate
+
+# Copy compiled JavaScript from builder stage
+COPY --from=builder /app/dist ./dist
+
+# Copy seed files (needed for initial setup)
+COPY backend/src/seeds ./dist/seeds
+
+# Change ownership to non-root user
+RUN chown -R hrms:hrms /app
+
+# Switch to non-root user
+USER hrms
+
+# Expose the API port
+EXPOSE 5000
+
+# Health check to verify the server is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
+
+# Start the server
+CMD ["node", "dist/server.js"]
