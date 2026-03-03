@@ -124,9 +124,7 @@ export class AuthController {
       path: '/api/auth',
     });
 
-    res.status(200).json(
-      ApiResponse.success('Logged out successfully.', null),
-    );
+    res.status(200).json(ApiResponse.success('Logged out successfully.', null));
   }
 
   // ------------------------------------------
@@ -152,9 +150,7 @@ export class AuthController {
 
     const user = await AuthService.getCurrentUser(userId);
 
-    res.status(200).json(
-      ApiResponse.success('Current user retrieved successfully.', user),
-    );
+    res.status(200).json(ApiResponse.success('Current user retrieved successfully.', user));
   }
 
   // ------------------------------------------
@@ -176,9 +172,7 @@ export class AuthController {
    */
   static async refresh(req: Request, res: Response): Promise<void> {
     // Try to get the refresh token from body first, then from cookies
-    const refreshToken =
-      req.body.refreshToken ||
-      req.cookies?.refreshToken;
+    const refreshToken = req.body.refreshToken || req.cookies?.refreshToken;
 
     if (!refreshToken) {
       throw ApiError.unauthorized(
@@ -241,12 +235,44 @@ export class AuthController {
       path: '/api/auth',
     });
 
-    res.status(200).json(
-      ApiResponse.success(
-        'Password changed successfully. Please log in again with your new password.',
-        null,
-      ),
-    );
+    res
+      .status(200)
+      .json(
+        ApiResponse.success(
+          'Password changed successfully. Please log in again with your new password.',
+          null,
+        ),
+      );
+  }
+
+  // ------------------------------------------
+  // POST /api/auth/reset-password
+  // ------------------------------------------
+
+  /**
+   * Resets a user's password using their email address.
+   * This is used for the "Forgot Password" flow.
+   *
+   * Request Body:
+   *   - email: string (required)
+   *   - newPassword: string (required, min 6 chars)
+   *   - confirmNewPassword: string (required, must match newPassword)
+   *
+   * Response: 200 OK
+   */
+  static async resetPassword(req: Request, res: Response): Promise<void> {
+    const { email, newPassword } = req.body;
+
+    await AuthService.resetPassword(email, newPassword);
+
+    res
+      .status(200)
+      .json(
+        ApiResponse.success(
+          'Password has been reset successfully. You can now log in with your new password.',
+          null,
+        ),
+      );
   }
 
   // ------------------------------------------

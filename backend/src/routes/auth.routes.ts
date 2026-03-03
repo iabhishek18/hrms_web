@@ -20,6 +20,7 @@ import {
   loginSchema,
   registerSchema,
   changePasswordSchema,
+  resetPasswordSchema,
   refreshTokenSchema,
 } from '../utils/validators';
 
@@ -35,11 +36,7 @@ const router = Router();
  * Register a new user account with an associated employee profile.
  * Validates: email, password (strong), confirmPassword, firstName, lastName, role?
  */
-router.post(
-  '/register',
-  validate(registerSchema, 'body'),
-  asyncHandler(AuthController.register),
-);
+router.post('/register', validate(registerSchema, 'body'), asyncHandler(AuthController.register));
 
 /**
  * POST /api/auth/login
@@ -48,10 +45,20 @@ router.post(
  * Returns JWT access + refresh tokens and user profile.
  * Validates: email, password
  */
+router.post('/login', validate(loginSchema, 'body'), asyncHandler(AuthController.login));
+
+/**
+ * POST /api/auth/reset-password
+ *
+ * Reset a user's password using their email address.
+ * Used for the "Forgot Password" flow where the user provides
+ * their email and sets a new password directly.
+ * Validates: email, newPassword, confirmNewPassword
+ */
 router.post(
-  '/login',
-  validate(loginSchema, 'body'),
-  asyncHandler(AuthController.login),
+  '/reset-password',
+  validate(resetPasswordSchema, 'body'),
+  asyncHandler(AuthController.resetPassword),
 );
 
 /**
@@ -61,10 +68,7 @@ router.post(
  * The refresh token can be provided in the request body or as an HTTP-only cookie.
  * Implements token rotation for security.
  */
-router.post(
-  '/refresh',
-  asyncHandler(AuthController.refresh),
-);
+router.post('/refresh', asyncHandler(AuthController.refresh));
 
 // ============================================
 // Protected Routes (Authentication required)
@@ -77,11 +81,7 @@ router.post(
  * The access token will remain valid until it naturally expires.
  * Clears the refresh token cookie.
  */
-router.post(
-  '/logout',
-  authenticate,
-  asyncHandler(AuthController.logout),
-);
+router.post('/logout', authenticate, asyncHandler(AuthController.logout));
 
 /**
  * GET /api/auth/me
@@ -89,11 +89,7 @@ router.post(
  * Retrieve the full profile of the currently authenticated user.
  * Includes employee record, department, manager, and leave balances.
  */
-router.get(
-  '/me',
-  authenticate,
-  asyncHandler(AuthController.me),
-);
+router.get('/me', authenticate, asyncHandler(AuthController.me));
 
 /**
  * GET /api/auth/verify
@@ -102,11 +98,7 @@ router.get(
  * Returns minimal user information (userId, email, role).
  * Useful for the frontend to check auth state on page load.
  */
-router.get(
-  '/verify',
-  authenticate,
-  asyncHandler(AuthController.verify),
-);
+router.get('/verify', authenticate, asyncHandler(AuthController.verify));
 
 /**
  * POST /api/auth/change-password

@@ -4,7 +4,7 @@
 // Provides typed API functions for all authentication
 // endpoints. Used by the auth Redux slice and useAuth hook.
 
-import { api } from './client';
+import { api } from "./client";
 
 // ============================================
 // Types
@@ -21,11 +21,17 @@ export interface RegisterPayload {
   confirmPassword: string;
   firstName: string;
   lastName: string;
-  role?: 'ADMIN' | 'HR' | 'EMPLOYEE';
+  role?: "ADMIN" | "HR" | "EMPLOYEE";
 }
 
 export interface ChangePasswordPayload {
   currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
   newPassword: string;
   confirmNewPassword: string;
 }
@@ -47,7 +53,7 @@ export interface UserEmployee {
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'ADMIN' | 'HR' | 'EMPLOYEE';
+  role: "ADMIN" | "HR" | "EMPLOYEE";
   isActive?: boolean;
   lastLogin?: string | null;
   createdAt?: string;
@@ -94,7 +100,7 @@ export const authApi = {
    * Returns JWT access + refresh tokens and user profile.
    */
   login: (payload: LoginPayload) =>
-    api.post<AuthResponseData>('/auth/login', payload),
+    api.post<AuthResponseData>("/auth/login", payload),
 
   /**
    * POST /api/auth/register
@@ -102,23 +108,21 @@ export const authApi = {
    * Returns JWT access + refresh tokens and user profile.
    */
   register: (payload: RegisterPayload) =>
-    api.post<AuthResponseData>('/auth/register', payload),
+    api.post<AuthResponseData>("/auth/register", payload),
 
   /**
    * POST /api/auth/logout
    * Log out the current user by invalidating their refresh token.
    * Clears the refresh token cookie on the server side.
    */
-  logout: () =>
-    api.post<null>('/auth/logout'),
+  logout: () => api.post<null>("/auth/logout"),
 
   /**
    * GET /api/auth/me
    * Retrieve the full profile of the currently authenticated user.
    * Includes employee record, department, manager, and leave balances.
    */
-  me: () =>
-    api.get<AuthUser>('/auth/me'),
+  me: () => api.get<AuthUser>("/auth/me"),
 
   /**
    * POST /api/auth/refresh
@@ -126,15 +130,14 @@ export const authApi = {
    * Implements token rotation for security.
    */
   refresh: (refreshToken: string) =>
-    api.post<RefreshResponseData>('/auth/refresh', { refreshToken }),
+    api.post<RefreshResponseData>("/auth/refresh", { refreshToken }),
 
   /**
    * GET /api/auth/verify
    * Verify that the current access token is valid.
    * Returns minimal user information (userId, email, role).
    */
-  verify: () =>
-    api.get<VerifyResponseData>('/auth/verify'),
+  verify: () => api.get<VerifyResponseData>("/auth/verify"),
 
   /**
    * POST /api/auth/change-password
@@ -143,7 +146,16 @@ export const authApi = {
    * Invalidates all existing refresh tokens (forces re-login).
    */
   changePassword: (payload: ChangePasswordPayload) =>
-    api.post<null>('/auth/change-password', payload),
+    api.post<null>("/auth/change-password", payload),
+
+  /**
+   * POST /api/auth/reset-password
+   * Reset a user's password using their email address.
+   * Used for the "Forgot Password" flow where the user provides
+   * their email and sets a new password directly.
+   */
+  resetPassword: (payload: ResetPasswordPayload) =>
+    api.post<null>("/auth/reset-password", payload),
 };
 
 export default authApi;

@@ -9,14 +9,14 @@
 //   - Link to registration page
 //   - Dark theme matching the reference dashboard
 
-import { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useAppSelector, useAppDispatch } from '@/hooks/useRedux';
-import { login, clearError } from '@/store/slices/authSlice';
-import { cn } from '@/utils/cn';
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
+import { login, clearError } from "@/store/slices/authSlice";
+import { cn } from "@/utils/cn";
 import {
   HiOutlineEnvelope,
   HiOutlineLockClosed,
@@ -25,7 +25,7 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineInformationCircle,
   HiOutlineArrowRightOnRectangle,
-} from 'react-icons/hi2';
+} from "react-icons/hi2";
 
 // ============================================
 // Validation Schema
@@ -34,12 +34,12 @@ import {
 const loginSchema = z.object({
   email: z
     .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
+    .min(1, "Email is required")
+    .email("Please enter a valid email address"),
   password: z
     .string()
-    .min(1, 'Password is required')
-    .min(6, 'Password must be at least 6 characters'),
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -50,28 +50,28 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const DEMO_CREDENTIALS = [
   {
-    role: 'Admin',
-    email: 'admin@hrms.com',
-    password: 'admin123',
-    color: 'text-primary-400',
-    bg: 'bg-primary-500/10',
-    border: 'border-primary-500/20',
+    role: "Admin",
+    email: "admin@hrms.com",
+    password: "admin123",
+    color: "text-primary-400",
+    bg: "bg-primary-500/10",
+    border: "border-primary-500/20",
   },
   {
-    role: 'HR',
-    email: 'hr@hrms.com',
-    password: 'hr123456',
-    color: 'text-accent-400',
-    bg: 'bg-accent-500/10',
-    border: 'border-accent-500/20',
+    role: "HR",
+    email: "hr@hrms.com",
+    password: "hr123456",
+    color: "text-accent-400",
+    bg: "bg-accent-500/10",
+    border: "border-accent-500/20",
   },
   {
-    role: 'Employee',
-    email: 'john.doe@hrms.com',
-    password: 'employee123',
-    color: 'text-success-400',
-    bg: 'bg-success-500/10',
-    border: 'border-success-500/20',
+    role: "Employee",
+    email: "john.doe@hrms.com",
+    password: "employee123",
+    color: "text-success-400",
+    bg: "bg-success-500/10",
+    border: "border-success-500/20",
   },
 ];
 
@@ -85,16 +85,18 @@ export function LoginPage() {
   const location = useLocation();
 
   // Auth state from Redux
-  const { isAuthenticated, isLoading, error: authError } = useAppSelector(
-    (state) => state.auth,
-  );
+  const {
+    isAuthenticated,
+    isLoading,
+    error: authError,
+  } = useAppSelector((state) => state.auth);
 
   // Local state
   const [showPassword, setShowPassword] = useState(false);
   const [showDemoCredentials, setShowDemoCredentials] = useState(false);
 
   // Get the redirect path from location state (if user was redirected from a protected route)
-  const from = (location.state as { from?: string })?.from || '/dashboard';
+  const from = (location.state as { from?: string })?.from || "/dashboard";
 
   // ---- React Hook Form Setup ----
   const {
@@ -107,8 +109,8 @@ export function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
   });
 
@@ -146,24 +148,23 @@ export function LoginPage() {
       // The error is already stored in Redux state by the rejected action.
       // Optionally set a form-level error for immediate display:
       const message =
-        typeof err === 'string'
+        typeof err === "string"
           ? err
-          : err?.message || 'Login failed. Please check your credentials.';
-      setError('root', { message });
+          : err?.message || "Login failed. Please check your credentials.";
+      setError("root", { message });
     }
   };
 
   // ---- Fill Demo Credentials ----
   const handleFillCredentials = (email: string, password: string) => {
-    setValue('email', email);
-    setValue('password', password);
+    setValue("email", email);
+    setValue("password", password);
     clearErrors();
     dispatch(clearError());
   };
 
   // ---- Computed error message ----
-  const errorMessage =
-    errors.root?.message || authError || null;
+  const errorMessage = errors.root?.message || authError || null;
 
   return (
     <div className="animate-fade-in">
@@ -185,9 +186,7 @@ export function LoginPage() {
             <p className="text-sm font-medium text-danger-400">
               Authentication Failed
             </p>
-            <p className="mt-0.5 text-xs text-danger-400/80">
-              {errorMessage}
-            </p>
+            <p className="mt-0.5 text-xs text-danger-400/80">{errorMessage}</p>
           </div>
         </div>
       )}
@@ -206,25 +205,27 @@ export function LoginPage() {
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <HiOutlineEnvelope
                 className={cn(
-                  'h-4.5 w-4.5 transition-colors',
-                  errors.email ? 'text-danger-400' : 'text-gray-400 dark:text-dark-500',
+                  "h-4.5 w-4.5 transition-colors",
+                  errors.email
+                    ? "text-danger-400"
+                    : "text-gray-400 dark:text-dark-500",
                 )}
               />
             </div>
             <input
-              {...register('email')}
+              {...register("email")}
               type="email"
               id="email"
               autoComplete="email"
               placeholder="Enter your email"
               disabled={isLoading}
               className={cn(
-                'w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-4 text-sm text-white placeholder-dark-500 outline-none transition-all',
-                'focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:opacity-50',
+                "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-4 text-sm text-white placeholder-dark-500 outline-none transition-all",
+                "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
+                "disabled:cursor-not-allowed disabled:opacity-50",
                 errors.email
-                  ? 'border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20'
-                  : 'border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600',
+                  ? "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20"
+                  : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600",
               )}
             />
           </div>
@@ -245,37 +246,39 @@ export function LoginPage() {
             >
               Password
             </label>
-            <button
-              type="button"
+            <Link
+              to="/forgot-password"
               className="text-xs font-medium text-primary-400 transition-colors hover:text-primary-300"
               tabIndex={-1}
             >
               Forgot password?
-            </button>
+            </Link>
           </div>
           <div className="relative">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
               <HiOutlineLockClosed
                 className={cn(
-                  'h-4.5 w-4.5 transition-colors',
-                  errors.password ? 'text-danger-400' : 'text-gray-400 dark:text-dark-500',
+                  "h-4.5 w-4.5 transition-colors",
+                  errors.password
+                    ? "text-danger-400"
+                    : "text-gray-400 dark:text-dark-500",
                 )}
               />
             </div>
             <input
-              {...register('password')}
-              type={showPassword ? 'text' : 'password'}
+              {...register("password")}
+              type={showPassword ? "text" : "password"}
               id="password"
               autoComplete="current-password"
               placeholder="Enter your password"
               disabled={isLoading}
               className={cn(
-                'w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-11 text-sm text-white placeholder-dark-500 outline-none transition-all',
-                'focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-                'disabled:cursor-not-allowed disabled:opacity-50',
+                "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-11 text-sm text-white placeholder-dark-500 outline-none transition-all",
+                "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
+                "disabled:cursor-not-allowed disabled:opacity-50",
                 errors.password
-                  ? 'border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20'
-                  : 'border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600',
+                  ? "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20"
+                  : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600",
               )}
             />
             <button
@@ -283,7 +286,7 @@ export function LoginPage() {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 dark:text-dark-500 transition-colors hover:text-gray-600 dark:text-dark-300"
               tabIndex={-1}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
                 <HiOutlineEyeSlash className="h-4.5 w-4.5" />
@@ -320,11 +323,11 @@ export function LoginPage() {
           type="submit"
           disabled={isLoading || isSubmitting}
           className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white transition-all',
-            'bg-primary-600 hover:bg-primary-500 active:bg-primary-700',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-dark-900',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-            'shadow-lg shadow-primary-600/20 hover:shadow-primary-500/30',
+            "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white transition-all",
+            "bg-primary-600 hover:bg-primary-500 active:bg-primary-700",
+            "focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-dark-900",
+            "disabled:cursor-not-allowed disabled:opacity-50",
+            "shadow-lg shadow-primary-600/20 hover:shadow-primary-500/30",
           )}
         >
           {isLoading || isSubmitting ? (
@@ -370,8 +373,8 @@ export function LoginPage() {
           <HiOutlineInformationCircle className="h-4 w-4" />
           <span>
             {showDemoCredentials
-              ? 'Hide demo credentials'
-              : 'Show demo credentials'}
+              ? "Hide demo credentials"
+              : "Show demo credentials"}
           </span>
         </button>
 
@@ -384,11 +387,9 @@ export function LoginPage() {
               <button
                 key={cred.role}
                 type="button"
-                onClick={() =>
-                  handleFillCredentials(cred.email, cred.password)
-                }
+                onClick={() => handleFillCredentials(cred.email, cred.password)}
                 className={cn(
-                  'flex w-full items-center justify-between rounded-lg border px-3.5 py-2.5 text-left transition-all hover:scale-[1.01]',
+                  "flex w-full items-center justify-between rounded-lg border px-3.5 py-2.5 text-left transition-all hover:scale-[1.01]",
                   cred.bg,
                   cred.border,
                 )}
@@ -396,7 +397,7 @@ export function LoginPage() {
                 <div className="flex items-center gap-3">
                   <span
                     className={cn(
-                      'inline-flex h-7 w-7 items-center justify-center rounded-full text-2xs font-bold',
+                      "inline-flex h-7 w-7 items-center justify-center rounded-full text-2xs font-bold",
                       cred.bg,
                       cred.color,
                     )}
@@ -404,15 +405,19 @@ export function LoginPage() {
                     {cred.role.charAt(0)}
                   </span>
                   <div>
-                    <p className={cn('text-xs font-semibold', cred.color)}>
+                    <p className={cn("text-xs font-semibold", cred.color)}>
                       {cred.role}
                     </p>
-                    <p className="text-2xs text-gray-400 dark:text-dark-500">{cred.email}</p>
+                    <p className="text-2xs text-gray-400 dark:text-dark-500">
+                      {cred.email}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xs text-gray-400 dark:text-dark-500">Password</p>
-                  <p className={cn('text-xs font-mono', cred.color)}>
+                  <p className="text-2xs text-gray-400 dark:text-dark-500">
+                    Password
+                  </p>
+                  <p className={cn("text-xs font-mono", cred.color)}>
                     {cred.password}
                   </p>
                 </div>
@@ -425,7 +430,7 @@ export function LoginPage() {
       {/* ---- Register Link ---- */}
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-500 dark:text-dark-400">
-          Don't have an account?{' '}
+          Don't have an account?{" "}
           <Link
             to="/register"
             className="font-semibold text-primary-400 transition-colors hover:text-primary-300"

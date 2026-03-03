@@ -1072,21 +1072,20 @@ export function LeavePage() {
                     </td>
 
                     {/* Reason */}
-                    <td className="max-w-[200px] px-4 py-3.5">
-                      <p
-                        className="truncate text-sm text-gray-500 dark:text-dark-400"
-                        title={leave.reason}
-                      >
-                        {leave.reason}
-                      </p>
-                      {leave.remarks && (
-                        <p
-                          className="mt-0.5 truncate text-2xs text-gray-400 dark:text-dark-500 italic"
-                          title={leave.remarks}
-                        >
-                          Remark: {leave.remarks}
+                    <td className="max-w-[320px] px-4 py-3.5">
+                      <div className="group relative">
+                        <p className="text-sm text-gray-500 dark:text-dark-400 whitespace-pre-wrap break-words">
+                          {leave.reason}
                         </p>
-                      )}
+                        {leave.remarks && (
+                          <p className="mt-1.5 whitespace-pre-wrap break-words rounded-md bg-gray-50 px-2.5 py-1.5 text-2xs text-gray-500 dark:bg-dark-700/50 dark:text-dark-400 italic border border-gray-100 dark:border-dark-600/50">
+                            <span className="font-semibold not-italic text-gray-600 dark:text-dark-300">
+                              Remark:
+                            </span>{" "}
+                            {leave.remarks}
+                          </p>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}

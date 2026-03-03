@@ -38,6 +38,9 @@ import { AuthLayout } from "@/layouts/AuthLayout";
 // Auth pages
 const LoginPage = React.lazy(() => import("@/pages/auth/LoginPage"));
 const RegisterPage = React.lazy(() => import("@/pages/auth/RegisterPage"));
+const ForgotPasswordPage = React.lazy(
+  () => import("@/pages/auth/ForgotPasswordPage"),
+);
 
 // Dashboard
 const DashboardPage = React.lazy(
@@ -180,6 +183,7 @@ function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
         {/* ============================================ */}

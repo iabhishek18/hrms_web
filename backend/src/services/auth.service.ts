@@ -11,12 +11,7 @@ import prisma from '../config/database';
 import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
 import { hashPassword, comparePassword } from '../utils/password';
-import {
-  generateTokenPair,
-  verifyRefreshToken,
-  TokenPair,
-  TokenPayload,
-} from '../utils/jwt';
+import { generateTokenPair, verifyRefreshToken, TokenPair, TokenPayload } from '../utils/jwt';
 import { generateEmployeeId } from '../utils/helpers';
 import { Role } from '@prisma/client';
 
@@ -113,9 +108,7 @@ export class AuthService {
     });
 
     if (existingEmployee) {
-      throw ApiError.conflict(
-        'An employee with this email address already exists in the system.',
-      );
+      throw ApiError.conflict('An employee with this email address already exists in the system.');
     }
 
     // 2. Hash the password
@@ -148,7 +141,8 @@ export class AuthService {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.toLowerCase().trim(),
-          designation: role === 'ADMIN' ? 'System Administrator' : role === 'HR' ? 'HR Manager' : 'Employee',
+          designation:
+            role === 'ADMIN' ? 'System Administrator' : role === 'HR' ? 'HR Manager' : 'Employee',
           joiningDate: new Date(),
           status: 'ACTIVE',
           userId: user.id,
@@ -375,13 +369,9 @@ export class AuthService {
       decoded = verifyRefreshToken(refreshToken);
     } catch (err: any) {
       if (err.name === 'TokenExpiredError') {
-        throw ApiError.unauthorized(
-          'Your refresh token has expired. Please log in again.',
-        );
+        throw ApiError.unauthorized('Your refresh token has expired. Please log in again.');
       }
-      throw ApiError.unauthorized(
-        'Invalid refresh token. Please log in again.',
-      );
+      throw ApiError.unauthorized('Invalid refresh token. Please log in again.');
     }
 
     // 2. Find the user and verify the stored refresh token matches
@@ -575,9 +565,7 @@ export class AuthService {
     const isCurrentValid = await comparePassword(currentPassword, user.password);
 
     if (!isCurrentValid) {
-      throw ApiError.unauthorized(
-        'Current password is incorrect. Please try again.',
-      );
+      throw ApiError.unauthorized('Current password is incorrect. Please try again.');
     }
 
     // 3. Hash the new password
@@ -645,6 +633,67 @@ export class AuthService {
       role: user.role,
       employeeId: user.employee?.id,
     };
+  }
+
+  // ------------------------------------------
+  // Reset Password (Admin / Self-service)
+  // ------------------------------------------
+
+  /**
+   * Resets a user's password by email address.
+   * This is used for the "Forgot Password" flow where the user
+   * provides their email and a new password.
+   *
+   * Since we don't have email/SMTP configured, this works as a
+   * direct reset: user provides email + new password and the
+   * system resets it after verifying the email exists.
+   *
+   * @param email - The email of the account to reset
+   * @param newPassword - The new password to set
+   * @throws ApiError 404 if no user with that email exists
+   */
+  static async resetPassword(email: string, newPassword: string): Promise<void> {
+    // 1. Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase().trim() },
+      select: { id: true, email: true, isActive: true },
+    });
+
+    if (!user) {
+      throw ApiError.notFound(
+        'No account found with that email address. Please check and try again.',
+      );
+    }
+
+    if (!user.isActive) {
+      throw ApiError.forbidden(
+        'This account has been deactivated. Please contact an administrator.',
+      );
+    }
+
+    // 2. Hash the new password
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    // 3. Update password and invalidate refresh token
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedNewPassword,
+        refreshToken: null, // Force re-login on all devices
+      },
+    });
+
+    // 4. Log the password reset
+    await prisma.auditLog.create({
+      data: {
+        action: 'RESET_PASSWORD',
+        entity: 'User',
+        entityId: user.id,
+        details: JSON.stringify({ email: user.email }),
+        userId: user.id,
+        userEmail: user.email,
+      },
+    });
   }
 }
 

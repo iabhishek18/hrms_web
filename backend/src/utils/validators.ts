@@ -36,10 +36,9 @@ export type PaginationQuery = z.infer<typeof paginationSchema>;
 /** Date string validator (ISO 8601 date) */
 const dateStringSchema = z
   .string()
-  .refine(
-    (val) => !isNaN(Date.parse(val)),
-    { message: 'Invalid date format. Use ISO 8601 (e.g., 2024-01-15)' },
-  );
+  .refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Invalid date format. Use ISO 8601 (e.g., 2024-01-15)',
+  });
 
 /** Phone number validator (basic international format) */
 const phoneSchema = z
@@ -121,6 +120,18 @@ export const changePasswordSchema = z
   });
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 
+export const resetPasswordSchema = z
+  .object({
+    email: emailSchema,
+    newPassword: passwordSchema,
+    confirmNewPassword: z.string().min(1, 'Please confirm your new password'),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmNewPassword'],
+  });
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, 'Refresh token is required'),
 });
@@ -201,9 +212,7 @@ export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>;
 
 export const employeeFilterSchema = paginationSchema.extend({
   departmentId: z.string().optional(),
-  status: z
-    .enum(['ACTIVE', 'INACTIVE', 'ON_LEAVE', 'TERMINATED', 'PROBATION'])
-    .optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'ON_LEAVE', 'TERMINATED', 'PROBATION']).optional(),
   employmentType: z.string().optional(),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
 });
@@ -257,13 +266,10 @@ export const applyLeaveSchema = z
       .max(1000, 'Reason must not exceed 1000 characters')
       .trim(),
   })
-  .refine(
-    (data) => new Date(data.endDate) >= new Date(data.startDate),
-    {
-      message: 'End date must be on or after the start date',
-      path: ['endDate'],
-    },
-  );
+  .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
+    message: 'End date must be on or after the start date',
+    path: ['endDate'],
+  });
 export type ApplyLeaveInput = z.infer<typeof applyLeaveSchema>;
 
 export const updateLeaveStatusSchema = z.object({
@@ -323,15 +329,7 @@ export const manualAttendanceSchema = z.object({
   date: dateStringSchema,
   clockIn: z.string().optional().nullable(),
   clockOut: z.string().optional().nullable(),
-  status: z.enum([
-    'PRESENT',
-    'ABSENT',
-    'LATE',
-    'HALF_DAY',
-    'ON_LEAVE',
-    'HOLIDAY',
-    'WEEKEND',
-  ]),
+  status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE', 'HOLIDAY', 'WEEKEND']),
   notes: z.string().max(500).optional().nullable(),
 });
 export type ManualAttendanceInput = z.infer<typeof manualAttendanceSchema>;
@@ -378,13 +376,12 @@ export const updateSettingSchema = z.object({
     .string()
     .min(1, 'Setting key is required')
     .max(100, 'Key must not exceed 100 characters')
-    .regex(/^[a-z][a-z0-9_.]+$/i, 'Key must start with a letter and contain only letters, numbers, dots, and underscores'),
+    .regex(
+      /^[a-z][a-z0-9_.]+$/i,
+      'Key must start with a letter and contain only letters, numbers, dots, and underscores',
+    ),
   value: z.string().min(0).max(5000, 'Value must not exceed 5000 characters'),
-  group: z
-    .string()
-    .max(50)
-    .optional()
-    .default('general'),
+  group: z.string().max(50).optional().default('general'),
   description: z.string().max(500).optional().nullable(),
 });
 export type UpdateSettingInput = z.infer<typeof updateSettingSchema>;
@@ -446,15 +443,8 @@ export type UpdateAnnouncementInput = z.infer<typeof updateAnnouncementSchema>;
 
 export const createPerformanceReviewSchema = z.object({
   employeeId: uuidSchema,
-  reviewPeriod: z
-    .string()
-    .min(1, 'Review period is required')
-    .max(50)
-    .trim(),
-  rating: z
-    .number()
-    .min(1, 'Rating must be at least 1')
-    .max(5, 'Rating must not exceed 5'),
+  reviewPeriod: z.string().min(1, 'Review period is required').max(50).trim(),
+  rating: z.number().min(1, 'Rating must be at least 1').max(5, 'Rating must not exceed 5'),
   strengths: z.string().max(2000).optional().nullable(),
   areasToImprove: z.string().max(2000).optional().nullable(),
   goals: z.string().max(2000).optional().nullable(),

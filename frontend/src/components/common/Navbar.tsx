@@ -361,7 +361,7 @@ export function Navbar({ onLogout }: NavbarProps) {
               </div>
 
               {/* Notification Items */}
-              <div className="max-h-80 overflow-y-auto scrollbar-thin">
+              <div className="max-h-[28rem] overflow-y-auto scrollbar-thin">
                 {[
                   {
                     title: "Leave Request Approved",
@@ -435,7 +435,7 @@ export function Navbar({ onLogout }: NavbarProps) {
                       </p>
                       <p
                         className={cn(
-                          "mt-0.5 text-xs line-clamp-2",
+                          "mt-0.5 text-xs whitespace-pre-wrap break-words",
                           isDark ? "text-dark-400" : "text-gray-500",
                         )}
                       >
