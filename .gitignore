@@ -51,7 +51,6 @@ coverage/
 docker-compose.override.yml
 
 # Prisma
-backend/prisma/migrations/
 backend/prisma/*.db
 backend/prisma/*.db-journal
 
