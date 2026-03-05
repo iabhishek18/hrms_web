@@ -46,7 +46,7 @@ export function AuthLayout() {
   return (
     <div
       className={cn(
-        "flex min-h-screen w-full",
+        "flex min-h-[100dvh] w-full",
         isDark ? "bg-dark-950" : "bg-gray-100",
       )}
     >
@@ -134,7 +134,8 @@ export function AuthLayout() {
       {/* ---- Right Auth Form Panel ---- */}
       <div
         className={cn(
-          "relative flex w-full flex-col items-center justify-center px-4 py-8 sm:px-8 lg:w-1/2",
+          "relative flex w-full flex-col items-center justify-between px-4 py-6 sm:px-8 sm:py-8 lg:w-1/2 lg:justify-center",
+          "min-h-[100dvh] lg:min-h-0",
           isDark
             ? "bg-dark-950"
             : "bg-gradient-to-br from-gray-50 via-white to-gray-100",
@@ -148,14 +149,17 @@ export function AuthLayout() {
           </>
         )}
 
+        {/* Spacer for top on mobile (pushes content down slightly) */}
+        <div className="flex-shrink-0 lg:hidden" aria-hidden="true" />
+
         {/* Mobile logo (shown only on small screens) */}
-        <div className="relative z-10 mb-8 flex flex-col items-center lg:hidden">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-600/30">
-            <span className="text-xl font-bold text-white">HR</span>
+        <div className="relative z-10 mb-6 sm:mb-8 flex flex-col items-center lg:hidden">
+          <div className="mb-3 sm:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-600/30">
+            <span className="text-lg sm:text-xl font-bold text-white">HR</span>
           </div>
           <h1
             className={cn(
-              "text-2xl font-bold",
+              "text-xl sm:text-2xl font-bold",
               isDark ? "text-white" : "text-gray-900",
             )}
           >
@@ -163,7 +167,7 @@ export function AuthLayout() {
           </h1>
           <p
             className={cn(
-              "mt-1 text-sm",
+              "mt-1 text-xs sm:text-sm",
               isDark ? "text-dark-400" : "text-gray-500",
             )}
           >
@@ -174,7 +178,7 @@ export function AuthLayout() {
         {/* Auth form container */}
         <div
           className={cn(
-            "relative z-10 w-full max-w-md rounded-2xl p-6 sm:p-8",
+            "relative z-10 w-full max-w-md rounded-2xl p-5 sm:p-6 md:p-8",
             isDark
               ? "bg-transparent"
               : "bg-white/80 shadow-xl shadow-gray-200/50 ring-1 ring-gray-200/60 backdrop-blur-sm",
@@ -187,15 +191,23 @@ export function AuthLayout() {
           <Outlet />
         </div>
 
-        {/* Footer */}
-        <div className="relative z-10 mt-8 text-center">
+        {/* Footer — always visible, never cropped */}
+        <div className="relative z-10 mt-6 sm:mt-8 pb-2 flex-shrink-0 text-center w-full">
           <p
             className={cn(
-              "text-xs",
+              "text-2xs sm:text-xs leading-relaxed",
               isDark ? "text-dark-500" : "text-gray-400",
             )}
           >
             Protected by enterprise-grade security · JWT Authentication
+          </p>
+          <p
+            className={cn(
+              "mt-1.5 text-2xs",
+              isDark ? "text-dark-600" : "text-gray-300",
+            )}
+          >
+            © {new Date().getFullYear()} HRMSLite. All rights reserved.
           </p>
         </div>
       </div>

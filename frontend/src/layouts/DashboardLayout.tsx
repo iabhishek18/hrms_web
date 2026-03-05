@@ -256,15 +256,16 @@ export function DashboardLayout() {
           id="main-content"
           tabIndex={-1}
           className={cn(
-            "flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin focus:outline-none",
+            "flex-1 flex flex-col overflow-y-auto overflow-x-hidden scrollbar-thin focus:outline-none",
             isDark ? "bg-dark-950" : "bg-gray-50",
           )}
         >
           {/* Content padding wrapper — responsive padding via CSS variables */}
           <div
-            className="mx-auto w-full max-w-[1600px]"
+            className="mx-auto w-full max-w-[1600px] flex-1"
             style={{
               padding: "var(--page-padding-y) var(--page-padding-x)",
+              minHeight: "0",
             }}
           >
             {/*
@@ -275,9 +276,141 @@ export function DashboardLayout() {
             <Outlet />
           </div>
 
+          {/* ---- Footer ---- */}
+          <footer
+            className={cn(
+              "w-full border-t mt-auto flex-shrink-0",
+              isDark
+                ? "border-dark-800 bg-dark-950/80"
+                : "border-gray-200 bg-white/60 backdrop-blur-sm",
+            )}
+          >
+            <div className="mx-auto w-full max-w-[1600px] px-4 sm:px-6 md:px-8">
+              {/* Main footer content */}
+              <div className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:py-4">
+                {/* Left: Brand & Copyright */}
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        "flex h-6 w-6 items-center justify-center rounded-md",
+                        "bg-primary-600",
+                      )}
+                    >
+                      <span className="text-2xs font-bold text-white">HR</span>
+                    </div>
+                    <span
+                      className={cn(
+                        "text-sm font-semibold",
+                        isDark ? "text-dark-200" : "text-gray-700",
+                      )}
+                    >
+                      HRMSLite
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-xs",
+                      isDark ? "text-dark-500" : "text-gray-400",
+                    )}
+                  >
+                    © {new Date().getFullYear()} HRMSLite. All rights reserved.
+                  </span>
+                </div>
+
+                {/* Center: Links (visible on sm+) */}
+                <div className="hidden sm:flex sm:items-center sm:gap-4 md:gap-6">
+                  {[
+                    { label: "Privacy Policy", href: "#" },
+                    { label: "Terms of Service", href: "#" },
+                    { label: "Support", href: "#" },
+                  ].map((link) => (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      className={cn(
+                        "text-xs font-medium transition-colors",
+                        isDark
+                          ? "text-dark-400 hover:text-dark-200"
+                          : "text-gray-500 hover:text-gray-700",
+                      )}
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+
+                {/* Right: Version & status */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-2 w-2">
+                      <span
+                        className={cn(
+                          "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+                          "bg-success-400",
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "relative inline-flex h-2 w-2 rounded-full",
+                          "bg-success-500",
+                        )}
+                      />
+                    </span>
+                    <span
+                      className={cn(
+                        "text-xs",
+                        isDark ? "text-dark-400" : "text-gray-500",
+                      )}
+                    >
+                      System Online
+                    </span>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-2xs font-medium rounded-full px-2 py-0.5",
+                      isDark
+                        ? "bg-dark-800 text-dark-400"
+                        : "bg-gray-100 text-gray-500",
+                    )}
+                  >
+                    v1.0.0
+                  </span>
+                </div>
+              </div>
+
+              {/* Mobile links row */}
+              <div
+                className={cn(
+                  "flex items-center justify-center gap-4 border-t pb-4 pt-3 sm:hidden",
+                  isDark ? "border-dark-800" : "border-gray-100",
+                )}
+              >
+                {[
+                  { label: "Privacy", href: "#" },
+                  { label: "Terms", href: "#" },
+                  { label: "Support", href: "#" },
+                ].map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    className={cn(
+                      "text-xs font-medium transition-colors",
+                      isDark
+                        ? "text-dark-400 hover:text-dark-200"
+                        : "text-gray-500 hover:text-gray-700",
+                    )}
+                  >
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </footer>
+
           {/* Bottom safe area spacer for mobile devices with home indicator */}
           <div
-            className="w-full sm:hidden"
+            className="w-full sm:hidden flex-shrink-0"
             style={{ height: "var(--safe-area-bottom, 0px)" }}
             aria-hidden="true"
           />

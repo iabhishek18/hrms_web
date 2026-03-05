@@ -69,17 +69,28 @@ function Portal({ children }: { children: React.ReactNode }) {
 
 // ============================================
 // useBodyScrollLock — locks body scroll when active
+// Prevents background scrolling when bottom sheets are open
+// Also compensates for scrollbar width to prevent layout shift
 // ============================================
 
 function useBodyScrollLock(active: boolean) {
   useEffect(() => {
     if (!active) return;
+
     const originalOverflow = document.body.style.overflow;
     const originalPaddingRight = document.body.style.paddingRight;
+    const originalPosition = document.body.style.position;
+    const originalTop = document.body.style.top;
+    const originalWidth = document.body.style.width;
+    const scrollY = window.scrollY;
     const scrollbarWidth =
       window.innerWidth - document.documentElement.clientWidth;
 
+    // Use position fixed approach for iOS compatibility
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
     if (scrollbarWidth > 0) {
       document.body.style.paddingRight = `${scrollbarWidth}px`;
     }
@@ -87,12 +98,16 @@ function useBodyScrollLock(active: boolean) {
     return () => {
       document.body.style.overflow = originalOverflow;
       document.body.style.paddingRight = originalPaddingRight;
+      document.body.style.position = originalPosition;
+      document.body.style.top = originalTop;
+      document.body.style.width = originalWidth;
+      window.scrollTo(0, scrollY);
     };
   }, [active]);
 }
 
 // ============================================
-// useMediaQuery — check if viewport matches a query
+// useIsMobile — check if viewport matches a breakpoint
 // ============================================
 
 function useIsMobile(breakpoint = 640) {
@@ -127,6 +142,12 @@ export function Navbar({ onLogout }: NavbarProps) {
   // State
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
+  // Animation states for smooth enter/exit
+  const [notifAnimating, setNotifAnimating] = useState(false);
+  const [notifVisible, setNotifVisible] = useState(false);
+  const [userMenuAnimating, setUserMenuAnimating] = useState(false);
+  const [userMenuVisible, setUserMenuVisible] = useState(false);
+
   // Refs for desktop dropdown positioning & outside click
   const userMenuButtonRef = useRef<HTMLButtonElement>(null);
   const userMenuDropdownRef = useRef<HTMLDivElement>(null);
@@ -157,6 +178,45 @@ export function Navbar({ onLogout }: NavbarProps) {
 
   // ---- Lock body scroll when mobile panels open ----
   useBodyScrollLock(isMobile && (notificationPanelOpen || isUserMenuOpen));
+
+  // ---- Notification panel animation lifecycle ----
+  useEffect(() => {
+    if (notificationPanelOpen) {
+      setNotifVisible(true);
+      // Use rAF to ensure the DOM has rendered before starting animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setNotifAnimating(true);
+        });
+      });
+      return undefined;
+    } else {
+      setNotifAnimating(false);
+      const timer = setTimeout(() => {
+        setNotifVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [notificationPanelOpen]);
+
+  // ---- User menu animation lifecycle ----
+  useEffect(() => {
+    if (isUserMenuOpen) {
+      setUserMenuVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setUserMenuAnimating(true);
+        });
+      });
+      return undefined;
+    } else {
+      setUserMenuAnimating(false);
+      const timer = setTimeout(() => {
+        setUserMenuVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isUserMenuOpen]);
 
   // ---- Handlers ----
   const handleToggleMobileSidebar = useCallback(() => {
@@ -285,17 +345,21 @@ export function Navbar({ onLogout }: NavbarProps) {
   }, [dispatch]);
 
   // ---- Desktop dropdown position calculation ----
-  const getDropdownPosition = (
-    buttonRef: React.RefObject<HTMLButtonElement | null>,
-    width: number,
-  ) => {
-    if (!buttonRef.current) return { top: 0, right: 0 };
-    const rect = buttonRef.current.getBoundingClientRect();
-    return {
-      top: rect.bottom + 6,
-      right: Math.max(8, window.innerWidth - rect.right),
-    };
-  };
+  const getDropdownPosition = useCallback(
+    (buttonRef: React.RefObject<HTMLButtonElement | null>, width: number) => {
+      if (!buttonRef.current) return { top: 0, right: 0 };
+      const rect = buttonRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const calculatedRight = Math.max(8, viewportWidth - rect.right);
+      // Ensure dropdown doesn't overflow left
+      const maxRight = viewportWidth - width - 8;
+      return {
+        top: rect.bottom + 8,
+        right: Math.min(calculatedRight, maxRight),
+      };
+    },
+    [],
+  );
 
   // ---- User menu items ----
   const userMenuItems: UserMenuItem[] = [
@@ -357,12 +421,14 @@ export function Navbar({ onLogout }: NavbarProps) {
     },
   ];
 
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
   // ==================================================
   // RENDER: Notification Panel (portaled)
   // ==================================================
 
   const renderNotificationPanel = () => {
-    if (!notificationPanelOpen) return null;
+    if (!notifVisible) return null;
 
     if (isMobile) {
       // ---- Mobile: Full-screen bottom sheet via portal ----
@@ -370,7 +436,12 @@ export function Navbar({ onLogout }: NavbarProps) {
         <Portal>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-[2px] animate-fade-in"
+            className={cn(
+              "fixed inset-0 z-[9998] transition-opacity duration-300 ease-out",
+              isDark ? "bg-black/60" : "bg-black/40",
+              notifAnimating ? "opacity-100" : "opacity-0",
+            )}
+            style={{ backdropFilter: notifAnimating ? "blur(2px)" : "none" }}
             onClick={handleCloseNotifications}
             aria-hidden="true"
           />
@@ -378,25 +449,26 @@ export function Navbar({ onLogout }: NavbarProps) {
           <div
             className={cn(
               "fixed inset-x-0 bottom-0 z-[9999] flex flex-col",
-              "max-h-[85vh] overflow-hidden",
+              "max-h-[80vh] overflow-hidden",
               "rounded-t-2xl shadow-2xl",
-              "animate-slide-in-up",
+              "transition-transform duration-300 ease-out",
               isDark
                 ? "bg-dark-800 border-t border-dark-700"
                 : "bg-white border-t border-gray-200",
+              notifAnimating ? "translate-y-0" : "translate-y-full",
             )}
             style={{
-              paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)",
+              paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.75rem)",
             }}
             role="dialog"
             aria-modal="true"
             aria-label="Notifications"
           >
             {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
               <div
                 className={cn(
-                  "h-1 w-10 rounded-full",
+                  "h-1.5 w-12 rounded-full",
                   isDark ? "bg-dark-600" : "bg-gray-300",
                 )}
               />
@@ -405,34 +477,36 @@ export function Navbar({ onLogout }: NavbarProps) {
             {/* Header */}
             <div
               className={cn(
-                "flex items-center justify-between px-5 py-3 border-b",
+                "flex items-center justify-between px-5 py-3 border-b flex-shrink-0",
                 isDark ? "border-dark-700" : "border-gray-100",
               )}
             >
               <div className="flex items-center gap-3">
                 <h3
                   className={cn(
-                    "text-base font-semibold",
+                    "text-lg font-semibold",
                     isDark ? "text-white" : "text-gray-900",
                   )}
                 >
                   Notifications
                 </h3>
-                <span
-                  className={cn(
-                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                    isDark
-                      ? "bg-primary-500/10 text-primary-400"
-                      : "bg-primary-50 text-primary-600",
-                  )}
-                >
-                  3 new
-                </span>
+                {unreadCount > 0 && (
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                      isDark
+                        ? "bg-primary-500/15 text-primary-400"
+                        : "bg-primary-50 text-primary-600",
+                    )}
+                  >
+                    {unreadCount} new
+                  </span>
+                )}
               </div>
               <button
                 onClick={handleCloseNotifications}
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                  "flex h-10 w-10 items-center justify-center rounded-full transition-colors",
                   isDark
                     ? "text-dark-400 hover:bg-dark-700 active:bg-dark-600"
                     : "text-gray-400 hover:bg-gray-100 active:bg-gray-200",
@@ -444,12 +518,12 @@ export function Navbar({ onLogout }: NavbarProps) {
             </div>
 
             {/* Scrollable notification list */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
+            <div className="flex-1 overflow-y-auto overscroll-contain -webkit-overflow-scrolling-touch">
               {notifications.map((notification, index) => (
                 <div
                   key={index}
                   className={cn(
-                    "flex gap-3 px-5 py-4 transition-colors cursor-pointer",
+                    "flex gap-3.5 px-5 py-4 transition-colors cursor-pointer",
                     index !== notifications.length - 1 &&
                       (isDark
                         ? "border-b border-dark-700/50"
@@ -503,16 +577,16 @@ export function Navbar({ onLogout }: NavbarProps) {
             {/* Footer */}
             <div
               className={cn(
-                "border-t px-5 py-2",
+                "border-t px-5 py-3 flex-shrink-0",
                 isDark ? "border-dark-700" : "border-gray-100",
               )}
             >
               <button
                 className={cn(
-                  "flex w-full items-center justify-center rounded-xl py-3 text-sm font-medium transition-colors",
+                  "flex w-full items-center justify-center rounded-xl py-3 text-sm font-semibold transition-colors",
                   isDark
                     ? "text-primary-400 hover:bg-dark-700 active:bg-dark-600"
-                    : "text-primary-600 hover:bg-gray-50 active:bg-gray-100",
+                    : "text-primary-600 hover:bg-primary-50 active:bg-primary-100",
                 )}
               >
                 View all notifications
@@ -531,10 +605,14 @@ export function Navbar({ onLogout }: NavbarProps) {
         <div
           ref={notifDropdownRef}
           className={cn(
-            "fixed z-[9999] w-96 overflow-hidden rounded-xl border shadow-lg animate-fade-in-down",
+            "fixed z-[9999] w-96 overflow-hidden rounded-xl border shadow-lg",
+            "transition-all duration-200 ease-out",
             isDark
               ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
               : "border-gray-200 bg-white shadow-xl",
+            notifAnimating
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-2",
           )}
           style={{ top: pos.top, right: pos.right }}
         >
@@ -553,16 +631,18 @@ export function Navbar({ onLogout }: NavbarProps) {
             >
               Notifications
             </h3>
-            <span
-              className={cn(
-                "rounded-full px-2 py-0.5 text-2xs font-medium",
-                isDark
-                  ? "bg-primary-500/10 text-primary-400"
-                  : "bg-primary-50 text-primary-600",
-              )}
-            >
-              3 new
-            </span>
+            {unreadCount > 0 && (
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-2xs font-medium",
+                  isDark
+                    ? "bg-primary-500/10 text-primary-400"
+                    : "bg-primary-50 text-primary-600",
+                )}
+              >
+                {unreadCount} new
+              </span>
+            )}
           </div>
 
           {/* Notification items */}
@@ -648,7 +728,7 @@ export function Navbar({ onLogout }: NavbarProps) {
   // ==================================================
 
   const renderUserMenu = () => {
-    if (!isUserMenuOpen) return null;
+    if (!userMenuVisible) return null;
 
     if (isMobile) {
       // ---- Mobile: Full-screen bottom sheet via portal ----
@@ -656,7 +736,12 @@ export function Navbar({ onLogout }: NavbarProps) {
         <Portal>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-[2px] animate-fade-in"
+            className={cn(
+              "fixed inset-0 z-[9998] transition-opacity duration-300 ease-out",
+              isDark ? "bg-black/60" : "bg-black/40",
+              userMenuAnimating ? "opacity-100" : "opacity-0",
+            )}
+            style={{ backdropFilter: userMenuAnimating ? "blur(2px)" : "none" }}
             onClick={handleCloseUserMenu}
             aria-hidden="true"
           />
@@ -665,23 +750,24 @@ export function Navbar({ onLogout }: NavbarProps) {
             className={cn(
               "fixed inset-x-0 bottom-0 z-[9999] flex flex-col",
               "overflow-hidden rounded-t-2xl shadow-2xl",
-              "animate-slide-in-up",
+              "transition-transform duration-300 ease-out",
               isDark
                 ? "bg-dark-800 border-t border-dark-700"
                 : "bg-white border-t border-gray-200",
+              userMenuAnimating ? "translate-y-0" : "translate-y-full",
             )}
             style={{
-              paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)",
+              paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.75rem)",
             }}
             role="dialog"
             aria-modal="true"
             aria-label="User menu"
           >
             {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-1">
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
               <div
                 className={cn(
-                  "h-1 w-10 rounded-full",
+                  "h-1.5 w-12 rounded-full",
                   isDark ? "bg-dark-600" : "bg-gray-300",
                 )}
               />
@@ -690,14 +776,14 @@ export function Navbar({ onLogout }: NavbarProps) {
             {/* User info header */}
             <div
               className={cn(
-                "flex items-center gap-4 px-5 py-4 border-b",
+                "flex items-center gap-4 px-5 py-4 border-b flex-shrink-0",
                 isDark ? "border-dark-700" : "border-gray-100",
               )}
             >
               {/* Avatar */}
               <div
                 className={cn(
-                  "flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-semibold",
+                  "flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-lg font-semibold",
                   avatarUrl ? "" : "bg-primary-600 text-white",
                 )}
               >
@@ -734,14 +820,14 @@ export function Navbar({ onLogout }: NavbarProps) {
                     "mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
                     userRole === "ADMIN"
                       ? isDark
-                        ? "bg-primary-500/10 text-primary-400"
+                        ? "bg-primary-500/15 text-primary-400"
                         : "bg-primary-50 text-primary-600"
                       : userRole === "HR"
                         ? isDark
-                          ? "bg-accent-500/10 text-accent-400"
+                          ? "bg-accent-500/15 text-accent-400"
                           : "bg-accent-50 text-accent-600"
                         : isDark
-                          ? "bg-success-500/10 text-success-400"
+                          ? "bg-success-500/15 text-success-400"
                           : "bg-success-50 text-success-600",
                   )}
                 >
@@ -752,7 +838,7 @@ export function Navbar({ onLogout }: NavbarProps) {
               <button
                 onClick={handleCloseUserMenu}
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full transition-colors self-start",
+                  "flex h-10 w-10 items-center justify-center rounded-full transition-colors self-start flex-shrink-0",
                   isDark
                     ? "text-dark-400 hover:bg-dark-700 active:bg-dark-600"
                     : "text-gray-400 hover:bg-gray-100 active:bg-gray-200",
@@ -764,7 +850,7 @@ export function Navbar({ onLogout }: NavbarProps) {
             </div>
 
             {/* Menu items */}
-            <div className="py-2 px-2">
+            <div className="py-2 px-3">
               {userMenuItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -780,7 +866,7 @@ export function Navbar({ onLogout }: NavbarProps) {
                     <button
                       onClick={item.onClick}
                       className={cn(
-                        "flex w-full items-center gap-4 rounded-xl px-4 py-3.5 text-base font-medium transition-colors",
+                        "flex w-full items-center gap-4 rounded-xl px-4 py-4 text-base font-medium transition-colors",
                         item.variant === "danger"
                           ? isDark
                             ? "text-danger-400 hover:bg-danger-500/10 active:bg-danger-500/20"
@@ -789,8 +875,9 @@ export function Navbar({ onLogout }: NavbarProps) {
                             ? "text-dark-200 hover:bg-dark-700 active:bg-dark-600"
                             : "text-gray-700 hover:bg-gray-50 active:bg-gray-100",
                       )}
+                      style={{ minHeight: "48px" }}
                     >
-                      <Icon className="h-5 w-5" />
+                      <Icon className="h-5 w-5 flex-shrink-0" />
                       <span>{item.label}</span>
                     </button>
                   </Fragment>
@@ -810,10 +897,14 @@ export function Navbar({ onLogout }: NavbarProps) {
         <div
           ref={userMenuDropdownRef}
           className={cn(
-            "fixed z-[9999] w-56 overflow-hidden rounded-xl border shadow-lg animate-fade-in-down",
+            "fixed z-[9999] w-56 overflow-hidden rounded-xl border shadow-lg",
+            "transition-all duration-200 ease-out",
             isDark
               ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
               : "border-gray-200 bg-white shadow-xl",
+            userMenuAnimating
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-2",
           )}
           style={{ top: pos.top, right: pos.right }}
         >
@@ -826,7 +917,7 @@ export function Navbar({ onLogout }: NavbarProps) {
           >
             <p
               className={cn(
-                "text-sm font-semibold",
+                "text-sm font-semibold truncate",
                 isDark ? "text-white" : "text-gray-900",
               )}
             >
@@ -887,7 +978,7 @@ export function Navbar({ onLogout }: NavbarProps) {
                           : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
                     )}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 flex-shrink-0" />
                     <span>{item.label}</span>
                   </button>
                 </Fragment>
@@ -1030,10 +1121,12 @@ export function Navbar({ onLogout }: NavbarProps) {
           >
             <HiOutlineBell className="h-5 w-5" />
             {/* Badge dot */}
-            <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
-            </span>
+            {unreadCount > 0 && (
+              <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
+              </span>
+            )}
           </button>
 
           {/* Divider — hidden on very small screens */}
@@ -1101,7 +1194,7 @@ export function Navbar({ onLogout }: NavbarProps) {
             {/* Chevron — hidden on smallest screens */}
             <HiOutlineChevronDown
               className={cn(
-                "hidden h-4 w-4 transition-transform sm:block",
+                "hidden h-4 w-4 transition-transform duration-200 sm:block",
                 isDark ? "text-dark-400" : "text-gray-400",
                 isUserMenuOpen && "rotate-180",
               )}
@@ -1116,5 +1209,3 @@ export function Navbar({ onLogout }: NavbarProps) {
     </>
   );
 }
-
-export default Navbar;
