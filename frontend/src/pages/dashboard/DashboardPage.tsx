@@ -956,9 +956,9 @@ export function DashboardPage() {
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const userName = useAppSelector((state) =>
     state.auth.user?.employee
-      ? `${state.auth.user.employee.firstName} ${state.auth.user.employee.lastName}`.trim()
+      ? state.auth.user.employee.firstName
       : state.auth.user?.email === "admin@hrms.com"
-        ? "Abhishek Mishra"
+        ? "Abhishek"
         : state.auth.user?.email?.split("@")[0] || "User",
   );
 
