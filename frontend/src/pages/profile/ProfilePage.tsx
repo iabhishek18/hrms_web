@@ -1,5 +1,5 @@
 // ============================================
-// Profile Page
+// Profile Page — Enhanced Professional UI
 // ============================================
 // Displays and allows editing of the current user's profile.
 // Features:
@@ -227,33 +227,31 @@ function InfoCard({
   icon: Icon,
   children,
   className,
-  action,
+  delay = 0,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
   className?: string;
-  action?: React.ReactNode;
+  delay?: number;
 }) {
   return (
     <div
+      style={{ animationDelay: `${delay}ms` }}
       className={cn(
-        "rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none p-5",
+        "animate-fade-in-up rounded-xl border border-gray-200 bg-white shadow-card transition-all duration-300 hover:shadow-card-hover dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none dark:hover:shadow-card-dark-hover",
         className,
       )}
     >
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500/10">
-            <Icon className="h-4 w-4 text-primary-400" />
-          </div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-100">
-            {title}
-          </h3>
+      <div className="flex items-center gap-2.5 border-b border-gray-100 dark:border-dark-700/30 px-5 py-3.5">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-500/10">
+          <Icon className="h-4 w-4 text-primary-500 dark:text-primary-400" />
         </div>
-        {action}
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+          {title}
+        </h3>
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-3 px-5 py-4">{children}</div>
     </div>
   );
 }
@@ -769,7 +767,7 @@ export function ProfilePage() {
         <p className="mb-6 text-sm text-gray-400 dark:text-dark-500">{error}</p>
         <button
           onClick={fetchProfile}
-          className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white transition-colors hover:bg-primary-500"
+          className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-primary-500 hover:shadow-lg hover:shadow-primary-500/25"
         >
           <HiOutlineArrowPath className="h-4 w-4" />
           Try Again
@@ -784,70 +782,88 @@ export function ProfilePage() {
     : profile?.email || "User";
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* ---- Profile Header Card ---- */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none p-6">
-        <div className="flex flex-col items-start gap-6 sm:flex-row">
-          {/* Avatar */}
-          <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl ring-2 ring-dark-700 ring-offset-2 ring-offset-dark-800">
-            {renderAvatar()}
+    <div className="space-y-6">
+      {/* ---- Profile Header Card with Gradient ---- */}
+      <div className="animate-fade-in-up overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none">
+        {/* Gradient Banner */}
+        <div className="relative h-32 bg-gradient-to-r from-primary-600 via-accent-500 to-primary-700">
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{
+              backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
+              backgroundSize: "24px 24px",
+            }}
+          />
+          <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-accent-400/20 blur-2xl" />
+        </div>
+
+        <div className="relative px-6 pb-6">
+          {/* Avatar - overlapping the gradient */}
+          <div className="-mt-14 mb-4 flex flex-col items-start gap-6 sm:flex-row sm:items-end">
+            <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl ring-4 ring-white dark:ring-dark-800 shadow-lg">
+              {renderAvatar()}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 pt-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {fullName}
+                </h1>
+                {profile?.role && <RoleBadge role={profile.role} />}
+                {employee?.status && <StatusBadge status={employee.status} />}
+              </div>
+
+              {employee?.designation && (
+                <p className="mt-1 text-sm text-gray-500 dark:text-dark-400">
+                  {employee.designation}
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Info */}
-          <div className="flex-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {fullName}
-              </h1>
-              {profile?.role && <RoleBadge role={profile.role} />}
-              {employee?.status && <StatusBadge status={employee.status} />}
-            </div>
-
-            {employee?.designation && (
-              <p className="mt-1 text-sm text-gray-500 dark:text-dark-400">
-                {employee.designation}
-              </p>
-            )}
-
-            {/* Quick info */}
-            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-              {employee?.employeeId && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-400">
-                  <HiOutlineIdentification className="h-4 w-4 text-gray-400 dark:text-dark-500" />
-                  <span className="font-mono text-gray-600 dark:text-dark-300">
-                    {employee.employeeId}
-                  </span>
-                </div>
-              )}
-              {employee?.department && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-400">
-                  <HiOutlineBuildingOffice2 className="h-4 w-4 text-gray-400 dark:text-dark-500" />
-                  <span>{employee.department.name}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-400">
-                <HiOutlineEnvelope className="h-4 w-4 text-gray-400 dark:text-dark-500" />
-                <span>{profile?.email}</span>
+          {/* Quick info pills */}
+          <div className="flex flex-wrap gap-3">
+            {employee?.employeeId && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-dark-700/50 px-3 py-1.5 text-sm text-gray-600 dark:text-dark-300 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700">
+                <HiOutlineIdentification className="h-4 w-4 text-gray-400 dark:text-dark-500" />
+                <span className="font-mono text-xs">{employee.employeeId}</span>
               </div>
-              {employee?.phone && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-400">
-                  <HiOutlinePhone className="h-4 w-4 text-gray-400 dark:text-dark-500" />
-                  <span>{employee.phone}</span>
-                </div>
-              )}
-              {employee?.joiningDate && (
-                <div className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-dark-400">
-                  <HiOutlineCalendarDays className="h-4 w-4 text-gray-400 dark:text-dark-500" />
-                  <span>Joined {formatDate(employee.joiningDate)}</span>
-                </div>
-              )}
+            )}
+            {employee?.department && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-dark-700/50 px-3 py-1.5 text-sm text-gray-600 dark:text-dark-300 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700">
+                <HiOutlineBuildingOffice2 className="h-4 w-4 text-gray-400 dark:text-dark-500" />
+                <span className="text-xs">{employee.department.name}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-dark-700/50 px-3 py-1.5 text-sm text-gray-600 dark:text-dark-300 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700">
+              <HiOutlineEnvelope className="h-4 w-4 text-gray-400 dark:text-dark-500" />
+              <span className="text-xs">{profile?.email}</span>
             </div>
+            {employee?.phone && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-dark-700/50 px-3 py-1.5 text-sm text-gray-600 dark:text-dark-300 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700">
+                <HiOutlinePhone className="h-4 w-4 text-gray-400 dark:text-dark-500" />
+                <span className="text-xs">{employee.phone}</span>
+              </div>
+            )}
+            {employee?.joiningDate && (
+              <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 dark:bg-dark-700/50 px-3 py-1.5 text-sm text-gray-600 dark:text-dark-300 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700">
+                <HiOutlineCalendarDays className="h-4 w-4 text-gray-400 dark:text-dark-500" />
+                <span className="text-xs">
+                  Joined {formatDate(employee.joiningDate)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* ---- Tab Navigation ---- */}
-      <div className="flex gap-1 rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none p-1">
+      <div
+        className="flex gap-1 rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none p-1 animate-fade-in-up"
+        style={{ animationDelay: "50ms" }}
+      >
         <button
           onClick={() => setActiveTab("overview")}
           className={cn(

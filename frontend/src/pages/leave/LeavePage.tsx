@@ -1,5 +1,5 @@
 // ============================================
-// Leave Management Page
+// Leave Management Page — Enhanced Professional UI
 // ============================================
 // Displays leave requests, leave balances, and provides
 // functionality to apply for leave, approve/reject requests.
@@ -406,10 +406,13 @@ function LeaveBalanceCard({
 }) {
   const remaining = total - used;
   const percentage = total > 0 ? (used / total) * 100 : 0;
-  const config = LEAVE_TYPE_CONFIG[leaveType] || {
+  const isLow = remaining <= 1 && total > 0;
+  const config = LEAVE_TYPE_CONFIG[
+    leaveType as keyof typeof LEAVE_TYPE_CONFIG
+  ] || {
     label: leaveType,
-    color: "text-dark-300",
-    bg: "bg-dark-600/30",
+    color: "text-gray-400",
+    bg: "bg-gray-500/10",
   };
 
   return (
@@ -776,11 +779,11 @@ export function LeavePage() {
   const total = meta?.total ?? 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* ================================================================ */}
       {/* Page Header                                                       */}
       {/* ================================================================ */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
             Leave Management
@@ -789,6 +792,11 @@ export function LeavePage() {
             {isAdminOrHR
               ? "Manage leave requests for all employees"
               : "View your leave balance and manage leave requests"}
+            {total > 0 && (
+              <span className="ml-1 text-gray-400 dark:text-dark-500">
+                · {total} request{total !== 1 ? "s" : ""}
+              </span>
+            )}
           </p>
         </div>
 
@@ -804,7 +812,7 @@ export function LeavePage() {
           </button>
           <button
             onClick={() => setShowApplyModal(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition-all hover:bg-primary-500 hover:shadow-primary-500/30"
+            className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition-all hover:bg-primary-500 hover:shadow-lg hover:shadow-primary-500/30 hover:-translate-y-0.5"
           >
             <HiOutlinePlus className="h-4 w-4" />
             <span className="hidden sm:inline">Apply Leave</span>
@@ -817,7 +825,7 @@ export function LeavePage() {
       {/* Leave Balance Cards                                               */}
       {/* ================================================================ */}
       {balances.length > 0 && (
-        <div>
+        <div className="animate-fade-in-up" style={{ animationDelay: "50ms" }}>
           <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-dark-200">
             Leave Balance
           </h3>

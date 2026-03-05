@@ -1,15 +1,17 @@
 // ============================================
-// Employee List Page
+// Employee List Page — Enhanced Professional UI
 // ============================================
 // Displays a paginated, searchable, filterable table of employees.
 // Features:
+//   - Fully clickable table rows with navigation
 //   - Search across name, email, designation, employee ID
 //   - Filter by department, status, employment type
-//   - Sort by any column
+//   - Sort by any column with visual indicators
 //   - Pagination with page size control
 //   - Add new employee button (Admin/HR only)
 //   - View, edit, delete actions per row
 //   - Status badges with color coding
+//   - Animated transitions and hover effects
 //   - Responsive table with horizontal scroll on mobile
 //   - Loading skeletons and empty state
 
@@ -189,7 +191,7 @@ function EmployeeAvatar({
 
 function SkeletonRow() {
   return (
-    <tr className="animate-pulse border-b border-gray-100 dark:border-dark-700/30">
+    <tr className="border-b border-gray-100 dark:border-dark-700/30 animate-pulse">
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-gray-200 dark:bg-dark-700" />
@@ -925,17 +927,22 @@ export function EmployeeListPage() {
   ].filter(Boolean).length;
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4">
       {/* ================================================================ */}
       {/* Page Header                                                       */}
       {/* ================================================================ */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
             Employees
           </h2>
           <p className="mt-0.5 text-sm text-gray-500 dark:text-dark-400">
             Manage your team members and their information
+            {total > 0 && (
+              <span className="ml-1 text-gray-400 dark:text-dark-500">
+                · {total} total
+              </span>
+            )}
           </p>
         </div>
 
@@ -1178,31 +1185,33 @@ export function EmployeeListPage() {
               )}
 
               {/* Employee rows */}
-              {employees.map((employee) => {
+              {employees.map((employee, rowIndex) => {
                 const fullName = `${employee.firstName} ${employee.lastName}`;
 
                 return (
                   <tr
                     key={employee.id}
+                    onClick={() => handleViewEmployee(employee.id)}
+                    style={{ animationDelay: `${rowIndex * 30}ms` }}
                     className={cn(
-                      "border-b border-gray-100 dark:border-dark-700/30 transition-colors hover:bg-gray-50 dark:hover:bg-dark-700/20",
+                      "group/row cursor-pointer border-b border-gray-100 dark:border-dark-700/30 transition-all duration-200 hover:bg-primary-50/50 dark:hover:bg-primary-500/5 animate-fade-in",
                       isLoading && "opacity-50",
                     )}
                   >
                     {/* Employee Name & Avatar */}
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-3">
-                        <EmployeeAvatar
-                          name={fullName}
-                          avatar={employee.avatar}
-                        />
+                        <div className="relative">
+                          <EmployeeAvatar
+                            name={fullName}
+                            avatar={employee.avatar}
+                          />
+                          <div className="absolute -inset-0.5 rounded-full ring-2 ring-transparent transition-all duration-200 group-hover/row:ring-primary-500/30" />
+                        </div>
                         <div className="min-w-0">
-                          <button
-                            onClick={() => handleViewEmployee(employee.id)}
-                            className="truncate text-sm font-medium text-gray-900 dark:text-dark-100 transition-colors hover:text-primary-500 dark:hover:text-primary-400"
-                          >
+                          <span className="truncate text-sm font-medium text-gray-900 dark:text-dark-100 transition-colors group-hover/row:text-primary-600 dark:group-hover/row:text-primary-400 block">
                             {fullName}
-                          </button>
+                          </span>
                           <div className="flex items-center gap-2 text-2xs text-gray-400 dark:text-dark-500">
                             <span className="flex items-center gap-0.5">
                               <HiOutlineEnvelope className="h-3 w-3" />
@@ -1223,7 +1232,7 @@ export function EmployeeListPage() {
 
                     {/* Employee ID */}
                     <td className="px-4 py-3.5">
-                      <span className="inline-flex rounded-md bg-gray-200 dark:bg-dark-700/50 px-2 py-0.5 text-xs font-mono font-medium text-gray-600 dark:text-dark-300">
+                      <span className="inline-flex rounded-md bg-gray-200 dark:bg-dark-700/50 px-2 py-0.5 text-xs font-mono font-medium text-gray-600 dark:text-dark-300 transition-colors group-hover/row:bg-primary-100 group-hover/row:text-primary-700 dark:group-hover/row:bg-primary-500/10 dark:group-hover/row:text-primary-400">
                         {employee.employeeId}
                       </span>
                     </td>
@@ -1265,16 +1274,19 @@ export function EmployeeListPage() {
 
                     {/* Actions */}
                     <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-end">
-                        <ActionDropdown
-                          onView={() => handleViewEmployee(employee.id)}
-                          onEdit={() => handleEditEmployee(employee.id)}
-                          onDelete={() =>
-                            handleDeleteClick(employee.id, fullName)
-                          }
-                          canEdit={isAdminOrHR}
-                          canDelete={isAdmin}
-                        />
+                      <div className="flex items-center justify-end gap-1.5">
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <ActionDropdown
+                            onView={() => handleViewEmployee(employee.id)}
+                            onEdit={() => handleEditEmployee(employee.id)}
+                            onDelete={() =>
+                              handleDeleteClick(employee.id, fullName)
+                            }
+                            canEdit={isAdminOrHR}
+                            canDelete={isAdmin}
+                          />
+                        </div>
+                        <HiOutlineChevronRight className="h-4 w-4 text-gray-300 dark:text-dark-600 opacity-0 transition-all duration-200 group-hover/row:opacity-100 group-hover/row:translate-x-0.5" />
                       </div>
                     </td>
                   </tr>
