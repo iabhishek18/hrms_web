@@ -84,11 +84,36 @@ const STORAGE_KEYS = {
 // Local Storage Helpers
 // ============================================
 
+/**
+ * Patch admin user name — overrides the database name for admin@hrms.com
+ * so that "Rajesh Kumar" (or any stale DB value) is corrected to
+ * "Abhishek Mishra" on the client side without requiring a DB reseed.
+ */
+function patchAdminName(user: AuthUser): AuthUser {
+  if (
+    user.email === "admin@hrms.com" &&
+    user.employee &&
+    (user.employee.firstName !== "Abhishek" ||
+      user.employee.lastName !== "Mishra")
+  ) {
+    return {
+      ...user,
+      employee: {
+        ...user.employee,
+        firstName: "Abhishek",
+        lastName: "Mishra",
+      },
+    };
+  }
+  return user;
+}
+
 function saveAuthToStorage(user: AuthUser, tokens: AuthTokens): void {
   try {
+    const patchedUser = patchAdminName(user);
     localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken);
     localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(patchedUser));
   } catch (error) {
     console.error("Failed to save auth data to localStorage:", error);
   }
@@ -117,7 +142,7 @@ function loadAuthFromStorage(): {
       return { user: null, tokens: null };
     }
 
-    const user = JSON.parse(userJson) as AuthUser;
+    const user = patchAdminName(JSON.parse(userJson) as AuthUser);
     const tokens: AuthTokens = { accessToken, refreshToken };
 
     return { user, tokens };
@@ -143,9 +168,10 @@ export const login = createAsyncThunk<
 >("auth/login", async (credentials, { rejectWithValue }) => {
   try {
     const response = await authApi.login(credentials);
-    const { user, tokens } = response.data.data;
+    const { user: rawUser, tokens } = response.data.data;
 
-    // Persist auth data to localStorage
+    // Patch admin name and persist auth data to localStorage
+    const user = patchAdminName(rawUser);
     saveAuthToStorage(user, tokens);
 
     return { user, tokens };
@@ -170,9 +196,10 @@ export const register = createAsyncThunk<
 >("auth/register", async (credentials, { rejectWithValue }) => {
   try {
     const response = await authApi.register(credentials);
-    const { user, tokens } = response.data.data;
+    const { user: rawUser, tokens } = response.data.data;
 
-    // Persist auth data to localStorage
+    // Patch admin name and persist auth data to localStorage
+    const user = patchAdminName(rawUser);
     saveAuthToStorage(user, tokens);
 
     return { user, tokens };
@@ -220,7 +247,7 @@ export const fetchCurrentUser = createAsyncThunk<
 >("auth/fetchCurrentUser", async (_, { rejectWithValue }) => {
   try {
     const response = await authApi.me();
-    const user = response.data.data;
+    const user = patchAdminName(response.data.data);
 
     // Update the user data in localStorage
     const storedTokens = {
@@ -264,10 +291,11 @@ export const refreshTokens = createAsyncThunk<
     }
 
     const response = await authApi.refresh(currentRefreshToken);
-    const { tokens, user } = response.data.data;
+    const { tokens, user: rawUser } = response.data.data;
 
-    // Update stored tokens and user data
-    saveAuthToStorage(user as AuthUser, tokens);
+    // Patch admin name and update stored tokens and user data
+    const user = patchAdminName(rawUser as AuthUser);
+    saveAuthToStorage(user, tokens);
 
     return tokens;
   } catch (error: any) {
@@ -322,7 +350,7 @@ export const initializeAuth = createAsyncThunk<
     // Verify the stored token is still valid by fetching the current user
     try {
       const response = await authApi.me();
-      const freshUser = response.data.data as AuthUser;
+      const freshUser = patchAdminName(response.data.data as AuthUser);
 
       // Update localStorage with fresh user data
       saveAuthToStorage(freshUser, tokens);
@@ -333,12 +361,13 @@ export const initializeAuth = createAsyncThunk<
       if (error.response?.status === 401 && tokens.refreshToken) {
         try {
           const refreshResponse = await authApi.refresh(tokens.refreshToken);
-          const { tokens: newTokens, user: refreshedUser } =
+          const { tokens: newTokens, user: rawRefreshedUser } =
             refreshResponse.data.data;
 
-          saveAuthToStorage(refreshedUser as AuthUser, newTokens);
+          const refreshedUser = patchAdminName(rawRefreshedUser as AuthUser);
+          saveAuthToStorage(refreshedUser, newTokens);
 
-          return { user: refreshedUser as AuthUser, tokens: newTokens };
+          return { user: refreshedUser, tokens: newTokens };
         } catch (refreshError) {
           // Refresh also failed — clear everything
           clearAuthFromStorage();
@@ -399,10 +428,11 @@ const authSlice = createSlice({
      * Manually sets the user data (e.g., after profile update).
      */
     setUser(state, action: PayloadAction<AuthUser>) {
-      state.user = action.payload;
+      const patched = patchAdminName(action.payload);
+      state.user = patched;
       // Also update localStorage
       if (state.tokens) {
-        saveAuthToStorage(action.payload, state.tokens);
+        saveAuthToStorage(patched, state.tokens);
       }
     },
 
