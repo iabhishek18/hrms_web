@@ -22,6 +22,8 @@
 import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAppSelector } from "@/hooks/useRedux";
+import { selectResolvedTheme } from "@/store/slices/uiSlice";
+import { cn } from "@/utils/cn";
 
 // ============================================
 // Auth Layout Component
@@ -31,10 +33,10 @@ export function AuthLayout() {
   const navigate = useNavigate();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const isInitialized = useAppSelector((state) => state.auth.isInitialized);
+  const resolvedTheme = useAppSelector(selectResolvedTheme);
+  const isDark = resolvedTheme === "dark";
 
   // ---- Redirect to Dashboard if Already Authenticated ----
-  // If the user navigates to /login or /register while already
-  // logged in, redirect them to the dashboard instead.
   useEffect(() => {
     if (isInitialized && isAuthenticated) {
       navigate("/dashboard", { replace: true });
@@ -42,7 +44,12 @@ export function AuthLayout() {
   }, [isAuthenticated, isInitialized, navigate]);
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-dark-950">
+    <div
+      className={cn(
+        "flex min-h-screen w-full",
+        isDark ? "bg-dark-950" : "bg-gray-100",
+      )}
+    >
       {/* ---- Left Brand Panel (visible on lg+ screens) ---- */}
       <div className="relative hidden w-1/2 overflow-hidden lg:flex lg:flex-col lg:items-center lg:justify-center">
         {/* Gradient background */}
@@ -125,22 +132,54 @@ export function AuthLayout() {
       </div>
 
       {/* ---- Right Auth Form Panel ---- */}
-      <div className="flex w-full flex-col items-center justify-center px-4 py-8 sm:px-8 lg:w-1/2">
+      <div
+        className={cn(
+          "relative flex w-full flex-col items-center justify-center px-4 py-8 sm:px-8 lg:w-1/2",
+          isDark
+            ? "bg-dark-950"
+            : "bg-gradient-to-br from-gray-50 via-white to-gray-100",
+        )}
+      >
+        {/* Subtle decorative elements for light mode */}
+        {!isDark && (
+          <>
+            <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-primary-100/40 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-accent-100/30 blur-3xl" />
+          </>
+        )}
+
         {/* Mobile logo (shown only on small screens) */}
-        <div className="mb-8 flex flex-col items-center lg:hidden">
+        <div className="relative z-10 mb-8 flex flex-col items-center lg:hidden">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-600/30">
             <span className="text-xl font-bold text-white">HR</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1
+            className={cn(
+              "text-2xl font-bold",
+              isDark ? "text-white" : "text-gray-900",
+            )}
+          >
             HRMSLite
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-dark-400">
+          <p
+            className={cn(
+              "mt-1 text-sm",
+              isDark ? "text-dark-400" : "text-gray-500",
+            )}
+          >
             Human Resource Management System
           </p>
         </div>
 
         {/* Auth form container */}
-        <div className="w-full max-w-md">
+        <div
+          className={cn(
+            "relative z-10 w-full max-w-md rounded-2xl p-6 sm:p-8",
+            isDark
+              ? "bg-transparent"
+              : "bg-white/80 shadow-xl shadow-gray-200/50 ring-1 ring-gray-200/60 backdrop-blur-sm",
+          )}
+        >
           {/*
             Outlet renders the matched child route component.
             Login and Register page components are rendered here.
@@ -149,8 +188,13 @@ export function AuthLayout() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-400 dark:text-dark-500">
+        <div className="relative z-10 mt-8 text-center">
+          <p
+            className={cn(
+              "text-xs",
+              isDark ? "text-dark-500" : "text-gray-400",
+            )}
+          >
             Protected by enterprise-grade security · JWT Authentication
           </p>
         </div>

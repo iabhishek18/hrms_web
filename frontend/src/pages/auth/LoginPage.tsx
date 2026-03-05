@@ -8,7 +8,7 @@
 //   - Loading state during authentication
 //   - Demo credentials display for easy testing
 //   - Link to registration page
-//   - Dark theme matching the reference dashboard
+//   - Proper light/dark theme support
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -17,6 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import { login, clearError } from "@/store/slices/authSlice";
+import { selectResolvedTheme } from "@/store/slices/uiSlice";
 import { cn } from "@/utils/cn";
 import {
   HiOutlineEnvelope,
@@ -57,8 +58,11 @@ const DEMO_CREDENTIALS = [
     email: "admin@hrms.com",
     password: "admin123",
     color: "text-primary-400",
+    colorLight: "text-primary-600",
     bg: "bg-primary-500/10",
+    bgLight: "bg-primary-50",
     border: "border-primary-500/20",
+    borderLight: "border-primary-200",
     icon: HiOutlineShieldCheck,
   },
   {
@@ -66,8 +70,11 @@ const DEMO_CREDENTIALS = [
     email: "hr@hrms.com",
     password: "hr123456",
     color: "text-accent-400",
+    colorLight: "text-accent-600",
     bg: "bg-accent-500/10",
+    bgLight: "bg-accent-50",
     border: "border-accent-500/20",
+    borderLight: "border-accent-200",
     icon: HiOutlineUserCircle,
   },
   {
@@ -75,8 +82,11 @@ const DEMO_CREDENTIALS = [
     email: "john.doe@hrms.com",
     password: "employee123",
     color: "text-success-400",
+    colorLight: "text-success-600",
     bg: "bg-success-500/10",
+    bgLight: "bg-success-50",
     border: "border-success-500/20",
+    borderLight: "border-success-200",
     icon: HiOutlineUserCircle,
   },
 ];
@@ -132,6 +142,8 @@ export function LoginPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const resolvedTheme = useAppSelector(selectResolvedTheme);
+  const isDark = resolvedTheme === "dark";
 
   // Auth state from Redux
   const {
@@ -315,23 +327,57 @@ export function LoginPage() {
     <div className="animate-fade-in">
       {/* ---- Header ---- */}
       <div className="mb-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+        <h2
+          className={cn(
+            "text-2xl font-bold sm:text-3xl",
+            isDark ? "text-white" : "text-gray-900",
+          )}
+        >
           Welcome back
         </h2>
-        <p className="mt-2 text-sm text-gray-500 dark:text-dark-400">
+        <p
+          className={cn(
+            "mt-2 text-sm",
+            isDark ? "text-dark-400" : "text-gray-500",
+          )}
+        >
           Sign in to your HRMSLite account to continue
         </p>
       </div>
 
       {/* ---- Error Alert ---- */}
       {errorMessage && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-danger-500/20 bg-danger-500/10 px-4 py-3.5 animate-fade-in-down">
-          <HiOutlineExclamationCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-danger-400" />
+        <div
+          className={cn(
+            "mb-6 flex items-start gap-3 rounded-xl border px-4 py-3.5 animate-fade-in-down",
+            isDark
+              ? "border-danger-500/20 bg-danger-500/10"
+              : "border-danger-200 bg-danger-50",
+          )}
+        >
+          <HiOutlineExclamationCircle
+            className={cn(
+              "mt-0.5 h-5 w-5 flex-shrink-0",
+              isDark ? "text-danger-400" : "text-danger-500",
+            )}
+          />
           <div>
-            <p className="text-sm font-medium text-danger-400">
+            <p
+              className={cn(
+                "text-sm font-medium",
+                isDark ? "text-danger-400" : "text-danger-700",
+              )}
+            >
               Authentication Failed
             </p>
-            <p className="mt-0.5 text-xs text-danger-400/80">{errorMessage}</p>
+            <p
+              className={cn(
+                "mt-0.5 text-xs",
+                isDark ? "text-danger-400/80" : "text-danger-600",
+              )}
+            >
+              {errorMessage}
+            </p>
           </div>
         </div>
       )}
@@ -342,7 +388,10 @@ export function LoginPage() {
         <div ref={suggestionsRef}>
           <label
             htmlFor="email"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-dark-200"
+            className={cn(
+              "mb-1.5 block text-sm font-medium",
+              isDark ? "text-dark-200" : "text-gray-700",
+            )}
           >
             Email Address
           </label>
@@ -353,7 +402,9 @@ export function LoginPage() {
                   "h-4.5 w-4.5 transition-colors",
                   errors.email
                     ? "text-danger-400"
-                    : "text-gray-400 dark:text-dark-500",
+                    : isDark
+                      ? "text-dark-500"
+                      : "text-gray-400",
                 )}
               />
             </div>
@@ -373,32 +424,58 @@ export function LoginPage() {
               onFocus={(e) => handleEmailChange(e.target.value)}
               onKeyDown={handleEmailKeyDown}
               className={cn(
-                "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-4 text-sm text-white placeholder-dark-500 outline-none transition-all",
-                "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
+                "w-full rounded-xl border py-3 pl-10 pr-4 text-sm outline-none transition-all",
+                "focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500",
                 "disabled:cursor-not-allowed disabled:opacity-50",
-                errors.email
-                  ? "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20"
-                  : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600",
+                isDark
+                  ? "bg-dark-800/50 text-white placeholder-dark-500 border-dark-700 hover:border-dark-600"
+                  : "bg-white text-gray-900 placeholder-gray-400 border-gray-300 hover:border-gray-400",
+                errors.email &&
+                  "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20",
               )}
             />
 
             {/* ---- Email Suggestions Dropdown ---- */}
             {showSuggestions && emailSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-dark-600/80 bg-dark-800 shadow-lg shadow-black/30 animate-fade-in-down backdrop-blur-sm">
-                <div className="px-3 py-2 border-b border-dark-700/50">
-                  <p className="text-2xs font-medium text-dark-400">
+              <div
+                className={cn(
+                  "absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border shadow-lg animate-fade-in-down backdrop-blur-sm",
+                  isDark
+                    ? "border-dark-600/80 bg-dark-800 shadow-black/30"
+                    : "border-gray-200 bg-white shadow-gray-200/60",
+                )}
+              >
+                <div
+                  className={cn(
+                    "px-3 py-2 border-b",
+                    isDark ? "border-dark-700/50" : "border-gray-100",
+                  )}
+                >
+                  <p
+                    className={cn(
+                      "text-2xs font-medium",
+                      isDark ? "text-dark-400" : "text-gray-500",
+                    )}
+                  >
                     Suggestions · {emailSuggestions.length} match
                     {emailSuggestions.length !== 1 ? "es" : ""}
                   </p>
                 </div>
                 <div className="max-h-52 overflow-y-auto scrollbar-thin py-1">
                   {emailSuggestions.map((suggestion, index) => {
-                    const roleColor =
+                    const roleColorDark =
                       suggestion.role === "Admin"
                         ? "text-primary-400 bg-primary-500/10"
                         : suggestion.role === "HR"
                           ? "text-accent-400 bg-accent-500/10"
                           : "text-success-400 bg-success-500/10";
+
+                    const roleColorLight =
+                      suggestion.role === "Admin"
+                        ? "text-primary-600 bg-primary-50"
+                        : suggestion.role === "HR"
+                          ? "text-accent-600 bg-accent-50"
+                          : "text-success-600 bg-success-50";
 
                     return (
                       <button
@@ -409,15 +486,19 @@ export function LoginPage() {
                         className={cn(
                           "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all duration-150",
                           index === selectedSuggestionIndex
-                            ? "bg-primary-500/10"
-                            : "hover:bg-dark-700/50",
+                            ? isDark
+                              ? "bg-primary-500/10"
+                              : "bg-primary-50"
+                            : isDark
+                              ? "hover:bg-dark-700/50"
+                              : "hover:bg-gray-50",
                         )}
                       >
                         {/* Avatar / initial */}
                         <div
                           className={cn(
                             "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                            roleColor,
+                            isDark ? roleColorDark : roleColorLight,
                           )}
                         >
                           {suggestion.name.charAt(0)}
@@ -425,10 +506,20 @@ export function LoginPage() {
 
                         {/* Info */}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-dark-100">
+                          <p
+                            className={cn(
+                              "truncate text-sm font-medium",
+                              isDark ? "text-dark-100" : "text-gray-900",
+                            )}
+                          >
                             {suggestion.name}
                           </p>
-                          <p className="truncate text-2xs text-dark-400">
+                          <p
+                            className={cn(
+                              "truncate text-2xs",
+                              isDark ? "text-dark-400" : "text-gray-500",
+                            )}
+                          >
                             {suggestion.email}
                           </p>
                         </div>
@@ -437,7 +528,7 @@ export function LoginPage() {
                         <span
                           className={cn(
                             "flex-shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold",
-                            roleColor,
+                            isDark ? roleColorDark : roleColorLight,
                           )}
                         >
                           {suggestion.role}
@@ -446,17 +537,48 @@ export function LoginPage() {
                     );
                   })}
                 </div>
-                <div className="border-t border-dark-700/50 px-3 py-1.5">
-                  <p className="text-2xs text-dark-500">
-                    <kbd className="rounded border border-dark-600 bg-dark-700 px-1 py-0.5 text-2xs font-mono">
+                <div
+                  className={cn(
+                    "border-t px-3 py-1.5",
+                    isDark ? "border-dark-700/50" : "border-gray-100",
+                  )}
+                >
+                  <p
+                    className={cn(
+                      "text-2xs",
+                      isDark ? "text-dark-500" : "text-gray-400",
+                    )}
+                  >
+                    <kbd
+                      className={cn(
+                        "rounded border px-1 py-0.5 text-2xs font-mono",
+                        isDark
+                          ? "border-dark-600 bg-dark-700"
+                          : "border-gray-200 bg-gray-100",
+                      )}
+                    >
                       ↑↓
                     </kbd>{" "}
                     navigate ·{" "}
-                    <kbd className="rounded border border-dark-600 bg-dark-700 px-1 py-0.5 text-2xs font-mono">
+                    <kbd
+                      className={cn(
+                        "rounded border px-1 py-0.5 text-2xs font-mono",
+                        isDark
+                          ? "border-dark-600 bg-dark-700"
+                          : "border-gray-200 bg-gray-100",
+                      )}
+                    >
                       Enter
                     </kbd>{" "}
                     select ·{" "}
-                    <kbd className="rounded border border-dark-600 bg-dark-700 px-1 py-0.5 text-2xs font-mono">
+                    <kbd
+                      className={cn(
+                        "rounded border px-1 py-0.5 text-2xs font-mono",
+                        isDark
+                          ? "border-dark-600 bg-dark-700"
+                          : "border-gray-200 bg-gray-100",
+                      )}
+                    >
                       Esc
                     </kbd>{" "}
                     close
@@ -478,13 +600,21 @@ export function LoginPage() {
           <div className="mb-1.5 flex items-center justify-between">
             <label
               htmlFor="password"
-              className="text-sm font-medium text-gray-700 dark:text-dark-200"
+              className={cn(
+                "text-sm font-medium",
+                isDark ? "text-dark-200" : "text-gray-700",
+              )}
             >
               Password
             </label>
             <Link
               to="/forgot-password"
-              className="text-xs font-medium text-primary-400 transition-colors hover:text-primary-300"
+              className={cn(
+                "text-xs font-medium transition-colors",
+                isDark
+                  ? "text-primary-400 hover:text-primary-300"
+                  : "text-primary-600 hover:text-primary-500",
+              )}
               tabIndex={-1}
             >
               Forgot password?
@@ -497,7 +627,9 @@ export function LoginPage() {
                   "h-4.5 w-4.5 transition-colors",
                   errors.password
                     ? "text-danger-400"
-                    : "text-gray-400 dark:text-dark-500",
+                    : isDark
+                      ? "text-dark-500"
+                      : "text-gray-400",
                 )}
               />
             </div>
@@ -509,18 +641,25 @@ export function LoginPage() {
               placeholder="Enter your password"
               disabled={isLoading}
               className={cn(
-                "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-11 text-sm text-white placeholder-dark-500 outline-none transition-all",
-                "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
+                "w-full rounded-xl border py-3 pl-10 pr-11 text-sm outline-none transition-all",
+                "focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500",
                 "disabled:cursor-not-allowed disabled:opacity-50",
-                errors.password
-                  ? "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20"
-                  : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600",
+                isDark
+                  ? "bg-dark-800/50 text-white placeholder-dark-500 border-dark-700 hover:border-dark-600"
+                  : "bg-white text-gray-900 placeholder-gray-400 border-gray-300 hover:border-gray-400",
+                errors.password &&
+                  "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20",
               )}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 dark:text-dark-500 transition-colors hover:text-gray-600 dark:text-dark-300"
+              className={cn(
+                "absolute inset-y-0 right-0 flex items-center pr-3.5 transition-colors",
+                isDark
+                  ? "text-dark-500 hover:text-dark-300"
+                  : "text-gray-400 hover:text-gray-600",
+              )}
               tabIndex={-1}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
@@ -544,11 +683,19 @@ export function LoginPage() {
           <input
             type="checkbox"
             id="remember"
-            className="h-4 w-4 rounded border-gray-300 dark:border-dark-600 bg-dark-800 text-primary-600 focus:ring-2 focus:ring-primary-500/20 focus:ring-offset-0"
+            className={cn(
+              "h-4 w-4 rounded text-primary-600 focus:ring-2 focus:ring-primary-500/20 focus:ring-offset-0",
+              isDark
+                ? "border-dark-600 bg-dark-800"
+                : "border-gray-300 bg-white",
+            )}
           />
           <label
             htmlFor="remember"
-            className="ml-2 text-sm text-gray-500 dark:text-dark-400"
+            className={cn(
+              "ml-2 text-sm",
+              isDark ? "text-dark-400" : "text-gray-500",
+            )}
           >
             Remember me for 30 days
           </label>
@@ -559,9 +706,10 @@ export function LoginPage() {
           type="submit"
           disabled={isLoading || isSubmitting}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white transition-all",
+            "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all",
             "bg-primary-600 hover:bg-primary-500 active:bg-primary-700",
-            "focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-dark-900",
+            "focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2",
+            isDark ? "focus:ring-offset-dark-900" : "focus:ring-offset-white",
             "disabled:cursor-not-allowed disabled:opacity-50",
             "shadow-lg shadow-primary-600/20 hover:shadow-primary-500/30",
           )}
@@ -604,7 +752,12 @@ export function LoginPage() {
         <button
           type="button"
           onClick={() => setShowDemoCredentials(!showDemoCredentials)}
-          className="flex w-full items-center justify-center gap-2 text-xs text-gray-500 dark:text-dark-400 transition-colors hover:text-gray-600 dark:text-dark-300"
+          className={cn(
+            "flex w-full items-center justify-center gap-2 text-xs transition-colors",
+            isDark
+              ? "text-dark-400 hover:text-dark-300"
+              : "text-gray-500 hover:text-gray-600",
+          )}
         >
           <HiOutlineInformationCircle className="h-4 w-4" />
           <span>
@@ -616,7 +769,12 @@ export function LoginPage() {
 
         {showDemoCredentials && (
           <div className="mt-3 space-y-2 animate-fade-in-down">
-            <p className="text-center text-2xs text-gray-400 dark:text-dark-500">
+            <p
+              className={cn(
+                "text-center text-2xs",
+                isDark ? "text-dark-500" : "text-gray-400",
+              )}
+            >
               Click a credential below to auto-fill the login form
             </p>
             {DEMO_CREDENTIALS.map((cred) => {
@@ -630,34 +788,56 @@ export function LoginPage() {
                   }
                   className={cn(
                     "group flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left transition-all duration-200 hover:scale-[1.01] hover:shadow-md",
-                    cred.bg,
-                    cred.border,
+                    isDark
+                      ? cn(cred.bg, cred.border)
+                      : cn(cred.bgLight, cred.borderLight),
                   )}
                 >
                   <div className="flex items-center gap-3">
                     <span
                       className={cn(
                         "inline-flex h-8 w-8 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110",
-                        cred.bg,
-                        cred.color,
+                        isDark
+                          ? cn(cred.bg, cred.color)
+                          : cn(cred.bgLight, cred.colorLight),
                       )}
                     >
                       <Icon className="h-4 w-4" />
                     </span>
                     <div>
-                      <p className={cn("text-xs font-semibold", cred.color)}>
+                      <p
+                        className={cn(
+                          "text-xs font-semibold",
+                          isDark ? cred.color : cred.colorLight,
+                        )}
+                      >
                         {cred.role}
                       </p>
-                      <p className="text-2xs text-gray-400 dark:text-dark-500">
+                      <p
+                        className={cn(
+                          "text-2xs",
+                          isDark ? "text-dark-500" : "text-gray-400",
+                        )}
+                      >
                         {cred.email}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xs text-gray-400 dark:text-dark-500">
+                    <p
+                      className={cn(
+                        "text-2xs",
+                        isDark ? "text-dark-500" : "text-gray-400",
+                      )}
+                    >
                       Password
                     </p>
-                    <p className={cn("text-xs font-mono", cred.color)}>
+                    <p
+                      className={cn(
+                        "text-xs font-mono",
+                        isDark ? cred.color : cred.colorLight,
+                      )}
+                    >
                       {cred.password}
                     </p>
                   </div>
@@ -670,11 +850,18 @@ export function LoginPage() {
 
       {/* ---- Register Link ---- */}
       <div className="mt-8 text-center">
-        <p className="text-sm text-gray-500 dark:text-dark-400">
+        <p
+          className={cn("text-sm", isDark ? "text-dark-400" : "text-gray-500")}
+        >
           Don't have an account?{" "}
           <Link
             to="/register"
-            className="font-semibold text-primary-400 transition-colors hover:text-primary-300"
+            className={cn(
+              "font-semibold transition-colors",
+              isDark
+                ? "text-primary-400 hover:text-primary-300"
+                : "text-primary-600 hover:text-primary-500",
+            )}
           >
             Create an account
           </Link>

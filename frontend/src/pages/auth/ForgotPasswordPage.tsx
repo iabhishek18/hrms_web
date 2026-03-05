@@ -6,12 +6,15 @@
 //   - Set a new password
 //   - Confirm the new password
 // On success, redirects to the login page with a success message.
+// Supports proper light/dark theme.
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useAppSelector } from "@/hooks/useRedux";
+import { selectResolvedTheme } from "@/store/slices/uiSlice";
 import { cn } from "@/utils/cn";
 import { authApi } from "@/api/auth";
 import {
@@ -39,9 +42,7 @@ const forgotPasswordSchema = z
       .string()
       .min(1, "New password is required")
       .min(6, "Password must be at least 6 characters"),
-    confirmNewPassword: z
-      .string()
-      .min(1, "Please confirm your new password"),
+    confirmNewPassword: z.string().min(1, "Please confirm your new password"),
   })
   .refine((data) => data.newPassword === data.confirmNewPassword, {
     message: "Passwords do not match",
@@ -56,6 +57,8 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
+  const resolvedTheme = useAppSelector(selectResolvedTheme);
+  const isDark = resolvedTheme === "dark";
 
   // Local state
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -92,7 +95,7 @@ export function ForgotPasswordPage() {
       });
 
       setSuccessMessage(
-        "Password has been reset successfully! Redirecting to login..."
+        "Password has been reset successfully! Redirecting to login...",
       );
 
       // Redirect to login after 2 seconds
@@ -114,24 +117,68 @@ export function ForgotPasswordPage() {
     <div className="animate-fade-in">
       {/* ---- Header ---- */}
       <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/10">
-          <HiOutlineKey className="h-7 w-7 text-primary-400" />
+        <div
+          className={cn(
+            "mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl",
+            isDark ? "bg-primary-500/10" : "bg-primary-50",
+          )}
+        >
+          <HiOutlineKey
+            className={cn(
+              "h-7 w-7",
+              isDark ? "text-primary-400" : "text-primary-600",
+            )}
+          />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+        <h2
+          className={cn(
+            "text-2xl font-bold sm:text-3xl",
+            isDark ? "text-white" : "text-gray-900",
+          )}
+        >
           Reset Password
         </h2>
-        <p className="mt-2 text-sm text-gray-500 dark:text-dark-400">
+        <p
+          className={cn(
+            "mt-2 text-sm",
+            isDark ? "text-dark-400" : "text-gray-500",
+          )}
+        >
           Enter your email and set a new password
         </p>
       </div>
 
       {/* ---- Success Alert ---- */}
       {successMessage && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-success-500/20 bg-success-500/10 px-4 py-3.5 animate-fade-in-down">
-          <HiOutlineCheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-success-400" />
+        <div
+          className={cn(
+            "mb-6 flex items-start gap-3 rounded-xl border px-4 py-3.5 animate-fade-in-down",
+            isDark
+              ? "border-success-500/20 bg-success-500/10"
+              : "border-success-200 bg-success-50",
+          )}
+        >
+          <HiOutlineCheckCircle
+            className={cn(
+              "mt-0.5 h-5 w-5 flex-shrink-0",
+              isDark ? "text-success-400" : "text-success-500",
+            )}
+          />
           <div>
-            <p className="text-sm font-medium text-success-400">Success!</p>
-            <p className="mt-0.5 text-xs text-success-400/80">
+            <p
+              className={cn(
+                "text-sm font-medium",
+                isDark ? "text-success-400" : "text-success-700",
+              )}
+            >
+              Success!
+            </p>
+            <p
+              className={cn(
+                "mt-0.5 text-xs",
+                isDark ? "text-success-400/80" : "text-success-600",
+              )}
+            >
               {successMessage}
             </p>
           </div>
@@ -140,13 +187,35 @@ export function ForgotPasswordPage() {
 
       {/* ---- Error Alert ---- */}
       {errorMessage && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-danger-500/20 bg-danger-500/10 px-4 py-3.5 animate-fade-in-down">
-          <HiOutlineExclamationCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-danger-400" />
+        <div
+          className={cn(
+            "mb-6 flex items-start gap-3 rounded-xl border px-4 py-3.5 animate-fade-in-down",
+            isDark
+              ? "border-danger-500/20 bg-danger-500/10"
+              : "border-danger-200 bg-danger-50",
+          )}
+        >
+          <HiOutlineExclamationCircle
+            className={cn(
+              "mt-0.5 h-5 w-5 flex-shrink-0",
+              isDark ? "text-danger-400" : "text-danger-500",
+            )}
+          />
           <div>
-            <p className="text-sm font-medium text-danger-400">
+            <p
+              className={cn(
+                "text-sm font-medium",
+                isDark ? "text-danger-400" : "text-danger-700",
+              )}
+            >
               Reset Failed
             </p>
-            <p className="mt-0.5 text-xs text-danger-400/80">
+            <p
+              className={cn(
+                "mt-0.5 text-xs",
+                isDark ? "text-danger-400/80" : "text-danger-600",
+              )}
+            >
               {errorMessage}
             </p>
           </div>
@@ -159,7 +228,10 @@ export function ForgotPasswordPage() {
         <div>
           <label
             htmlFor="email"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-dark-200"
+            className={cn(
+              "mb-1.5 block text-sm font-medium",
+              isDark ? "text-dark-200" : "text-gray-700",
+            )}
           >
             Email Address
           </label>
@@ -170,7 +242,9 @@ export function ForgotPasswordPage() {
                   "h-4.5 w-4.5 transition-colors",
                   errors.email
                     ? "text-danger-400"
-                    : "text-gray-400 dark:text-dark-500"
+                    : isDark
+                      ? "text-dark-500"
+                      : "text-gray-400",
                 )}
               />
             </div>
@@ -182,12 +256,14 @@ export function ForgotPasswordPage() {
               placeholder="Enter your registered email"
               disabled={isLoading || !!successMessage}
               className={cn(
-                "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-4 text-sm text-white placeholder-dark-500 outline-none transition-all",
+                "w-full rounded-xl border py-3 pl-10 pr-4 text-sm outline-none transition-all",
                 "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
                 "disabled:cursor-not-allowed disabled:opacity-50",
-                errors.email
-                  ? "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20"
-                  : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600"
+                isDark
+                  ? "bg-dark-800/50 text-white placeholder-dark-500 border-dark-700 hover:border-dark-600"
+                  : "bg-white text-gray-900 placeholder-gray-400 border-gray-300 hover:border-gray-400",
+                errors.email &&
+                  "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20",
               )}
             />
           </div>
@@ -203,7 +279,10 @@ export function ForgotPasswordPage() {
         <div>
           <label
             htmlFor="newPassword"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-dark-200"
+            className={cn(
+              "mb-1.5 block text-sm font-medium",
+              isDark ? "text-dark-200" : "text-gray-700",
+            )}
           >
             New Password
           </label>
@@ -214,7 +293,9 @@ export function ForgotPasswordPage() {
                   "h-4.5 w-4.5 transition-colors",
                   errors.newPassword
                     ? "text-danger-400"
-                    : "text-gray-400 dark:text-dark-500"
+                    : isDark
+                      ? "text-dark-500"
+                      : "text-gray-400",
                 )}
               />
             </div>
@@ -226,18 +307,25 @@ export function ForgotPasswordPage() {
               placeholder="Enter new password"
               disabled={isLoading || !!successMessage}
               className={cn(
-                "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-11 text-sm text-white placeholder-dark-500 outline-none transition-all",
+                "w-full rounded-xl border py-3 pl-10 pr-11 text-sm outline-none transition-all",
                 "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
                 "disabled:cursor-not-allowed disabled:opacity-50",
-                errors.newPassword
-                  ? "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20"
-                  : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600"
+                isDark
+                  ? "bg-dark-800/50 text-white placeholder-dark-500 border-dark-700 hover:border-dark-600"
+                  : "bg-white text-gray-900 placeholder-gray-400 border-gray-300 hover:border-gray-400",
+                errors.newPassword &&
+                  "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20",
               )}
             />
             <button
               type="button"
               onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 dark:text-dark-500 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              className={cn(
+                "absolute inset-y-0 right-0 flex items-center pr-3.5 transition-colors",
+                isDark
+                  ? "text-dark-500 hover:text-dark-300"
+                  : "text-gray-400 hover:text-gray-600",
+              )}
               tabIndex={-1}
               aria-label={showNewPassword ? "Hide password" : "Show password"}
             >
@@ -260,7 +348,10 @@ export function ForgotPasswordPage() {
         <div>
           <label
             htmlFor="confirmNewPassword"
-            className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-dark-200"
+            className={cn(
+              "mb-1.5 block text-sm font-medium",
+              isDark ? "text-dark-200" : "text-gray-700",
+            )}
           >
             Confirm New Password
           </label>
@@ -271,7 +362,9 @@ export function ForgotPasswordPage() {
                   "h-4.5 w-4.5 transition-colors",
                   errors.confirmNewPassword
                     ? "text-danger-400"
-                    : "text-gray-400 dark:text-dark-500"
+                    : isDark
+                      ? "text-dark-500"
+                      : "text-gray-400",
                 )}
               />
             </div>
@@ -283,18 +376,25 @@ export function ForgotPasswordPage() {
               placeholder="Confirm new password"
               disabled={isLoading || !!successMessage}
               className={cn(
-                "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-11 text-sm text-white placeholder-dark-500 outline-none transition-all",
+                "w-full rounded-xl border py-3 pl-10 pr-11 text-sm outline-none transition-all",
                 "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
                 "disabled:cursor-not-allowed disabled:opacity-50",
-                errors.confirmNewPassword
-                  ? "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20"
-                  : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600"
+                isDark
+                  ? "bg-dark-800/50 text-white placeholder-dark-500 border-dark-700 hover:border-dark-600"
+                  : "bg-white text-gray-900 placeholder-gray-400 border-gray-300 hover:border-gray-400",
+                errors.confirmNewPassword &&
+                  "border-danger-500/50 focus:border-danger-500 focus:ring-danger-500/20",
               )}
             />
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 dark:text-dark-500 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
+              className={cn(
+                "absolute inset-y-0 right-0 flex items-center pr-3.5 transition-colors",
+                isDark
+                  ? "text-dark-500 hover:text-dark-300"
+                  : "text-gray-400 hover:text-gray-600",
+              )}
               tabIndex={-1}
               aria-label={
                 showConfirmPassword ? "Hide password" : "Show password"
@@ -320,11 +420,12 @@ export function ForgotPasswordPage() {
           type="submit"
           disabled={isLoading || !!successMessage}
           className={cn(
-            "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white transition-all",
+            "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all",
             "bg-primary-600 hover:bg-primary-500 active:bg-primary-700",
-            "focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2 focus:ring-offset-dark-900",
+            "focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-offset-2",
+            isDark ? "focus:ring-offset-dark-900" : "focus:ring-offset-white",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            "shadow-lg shadow-primary-600/20 hover:shadow-primary-500/30"
+            "shadow-lg shadow-primary-600/20 hover:shadow-primary-500/30",
           )}
         >
           {isLoading ? (
@@ -363,7 +464,12 @@ export function ForgotPasswordPage() {
       <div className="mt-8 text-center">
         <Link
           to="/login"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-400 transition-colors hover:text-primary-300"
+          className={cn(
+            "inline-flex items-center gap-1.5 text-sm font-semibold transition-colors",
+            isDark
+              ? "text-primary-400 hover:text-primary-300"
+              : "text-primary-600 hover:text-primary-500",
+          )}
         >
           <HiOutlineArrowLeft className="h-4 w-4" />
           Back to Sign In

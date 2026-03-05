@@ -379,7 +379,9 @@ export function Navbar({ onLogout }: NavbarProps) {
                     <span
                       className={cn(
                         "rounded-full px-2 py-0.5 text-2xs font-medium",
-                        "bg-primary-500/10 text-primary-400",
+                        isDark
+                          ? "bg-primary-500/10 text-primary-400"
+                          : "bg-primary-50 text-primary-600",
                       )}
                     >
                       3 new
@@ -672,10 +674,16 @@ export function Navbar({ onLogout }: NavbarProps) {
                         className={cn(
                           "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium",
                           userRole === "ADMIN"
-                            ? "bg-primary-500/10 text-primary-400"
+                            ? isDark
+                              ? "bg-primary-500/10 text-primary-400"
+                              : "bg-primary-50 text-primary-600"
                             : userRole === "HR"
-                              ? "bg-accent-500/10 text-accent-400"
-                              : "bg-success-500/10 text-success-400",
+                              ? isDark
+                                ? "bg-accent-500/10 text-accent-400"
+                                : "bg-accent-50 text-accent-600"
+                              : isDark
+                                ? "bg-success-500/10 text-success-400"
+                                : "bg-success-50 text-success-600",
                         )}
                       >
                         {roleLabel}
