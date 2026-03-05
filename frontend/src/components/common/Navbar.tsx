@@ -1,20 +1,21 @@
 // ============================================
-// Navbar Component — Enhanced Responsive Design
+// Navbar Component — Fully Responsive Design
 // ============================================
 // Top navigation bar for the HRMS dashboard.
 // Features:
 //   - Hamburger menu toggle for mobile sidebar
 //   - Global search bar with keyboard shortcut hint (⌘K)
 //   - Theme toggle (dark/light)
-//   - Notification bell with badge and dropdown panel
+//   - Notification bell with badge and portaled bottom sheet panel (mobile)
 //   - User avatar dropdown menu with profile, settings, logout
 //   - Breadcrumb / page title display
 //   - Fully responsive with mobile-first touch targets (44px min)
-//   - Mobile page title display
-//   - Notification panel adapts to mobile (bottom sheet style)
+//   - Portaled overlays to avoid z-index/overflow clipping
+//   - Body scroll lock when panels are open on mobile
 //   - Safe area inset support for notched devices
 
 import { useState, useRef, useEffect, useCallback, Fragment } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
 import {
@@ -38,6 +39,7 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineArrowRightOnRectangle,
   HiOutlineCommandLine,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 
 // ============================================
@@ -48,16 +50,65 @@ interface NavbarProps {
   onLogout?: () => void;
 }
 
-// ============================================
-// User Menu Item
-// ============================================
-
 interface UserMenuItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   onClick: () => void;
   variant?: "default" | "danger";
   divider?: boolean;
+}
+
+// ============================================
+// Portal wrapper — renders children into document.body
+// so overlays are never clipped by parent overflow/z-index
+// ============================================
+
+function Portal({ children }: { children: React.ReactNode }) {
+  return createPortal(children, document.body);
+}
+
+// ============================================
+// useBodyScrollLock — locks body scroll when active
+// ============================================
+
+function useBodyScrollLock(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [active]);
+}
+
+// ============================================
+// useMediaQuery — check if viewport matches a query
+// ============================================
+
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < breakpoint : false,
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mql.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [breakpoint]);
+
+  return isMobile;
 }
 
 // ============================================
@@ -71,11 +122,16 @@ export function Navbar({ onLogout }: NavbarProps) {
   const pageTitle = useAppSelector(selectPageTitle);
   const user = useAppSelector((state) => state.auth.user);
   const notificationPanelOpen = useAppSelector(selectNotificationPanelOpen);
+  const isMobile = useIsMobile();
 
-  // User dropdown state
+  // State
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const notificationRef = useRef<HTMLDivElement>(null);
+
+  // Refs for desktop dropdown positioning & outside click
+  const userMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const userMenuDropdownRef = useRef<HTMLDivElement>(null);
+  const notifButtonRef = useRef<HTMLButtonElement>(null);
+  const notifDropdownRef = useRef<HTMLDivElement>(null);
 
   // ---- Computed values ----
   const isDark = resolvedTheme === "dark";
@@ -99,8 +155,10 @@ export function Navbar({ onLogout }: NavbarProps) {
 
   const avatarUrl = user?.employee?.avatar || null;
 
-  // ---- Handlers ----
+  // ---- Lock body scroll when mobile panels open ----
+  useBodyScrollLock(isMobile && (notificationPanelOpen || isUserMenuOpen));
 
+  // ---- Handlers ----
   const handleToggleMobileSidebar = useCallback(() => {
     dispatch(toggleMobileSidebar());
   }, [dispatch]);
@@ -114,11 +172,27 @@ export function Navbar({ onLogout }: NavbarProps) {
   }, [dispatch]);
 
   const handleToggleNotifications = useCallback(() => {
+    // Close user menu if open
+    if (isUserMenuOpen) setIsUserMenuOpen(false);
     dispatch(toggleNotificationPanel());
-  }, [dispatch]);
+  }, [dispatch, isUserMenuOpen]);
+
+  const handleCloseNotifications = useCallback(() => {
+    if (notificationPanelOpen) {
+      dispatch(toggleNotificationPanel());
+    }
+  }, [dispatch, notificationPanelOpen]);
 
   const handleUserMenuToggle = useCallback(() => {
+    // Close notifications if open
+    if (notificationPanelOpen) {
+      dispatch(toggleNotificationPanel());
+    }
     setIsUserMenuOpen((prev) => !prev);
+  }, [dispatch, notificationPanelOpen]);
+
+  const handleCloseUserMenu = useCallback(() => {
+    setIsUserMenuOpen(false);
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -138,22 +212,33 @@ export function Navbar({ onLogout }: NavbarProps) {
     navigate("/settings");
   }, [navigate]);
 
-  // ---- Close user menu and notification panel on outside click ----
+  // ---- Close on outside click (desktop only) ----
   useEffect(() => {
+    if (isMobile) return; // Mobile uses backdrop overlay
+
     function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+
+      // Close user menu
       if (
-        userMenuRef.current &&
-        !userMenuRef.current.contains(event.target as Node)
+        isUserMenuOpen &&
+        userMenuButtonRef.current &&
+        !userMenuButtonRef.current.contains(target) &&
+        userMenuDropdownRef.current &&
+        !userMenuDropdownRef.current.contains(target)
       ) {
         setIsUserMenuOpen(false);
       }
+
+      // Close notification panel
       if (
-        notificationRef.current &&
-        !notificationRef.current.contains(event.target as Node)
+        notificationPanelOpen &&
+        notifButtonRef.current &&
+        !notifButtonRef.current.contains(target) &&
+        notifDropdownRef.current &&
+        !notifDropdownRef.current.contains(target)
       ) {
-        if (notificationPanelOpen) {
-          dispatch(toggleNotificationPanel());
-        }
+        dispatch(toggleNotificationPanel());
       }
     }
 
@@ -163,6 +248,24 @@ export function Navbar({ onLogout }: NavbarProps) {
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isUserMenuOpen, notificationPanelOpen, dispatch, isMobile]);
+
+  // ---- Close on Escape ----
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        if (isUserMenuOpen) setIsUserMenuOpen(false);
+        if (notificationPanelOpen) dispatch(toggleNotificationPanel());
+      }
+    }
+
+    if (isUserMenuOpen || notificationPanelOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isUserMenuOpen, notificationPanelOpen, dispatch]);
 
@@ -180,6 +283,19 @@ export function Navbar({ onLogout }: NavbarProps) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [dispatch]);
+
+  // ---- Desktop dropdown position calculation ----
+  const getDropdownPosition = (
+    buttonRef: React.RefObject<HTMLButtonElement | null>,
+    width: number,
+  ) => {
+    if (!buttonRef.current) return { top: 0, right: 0 };
+    const rect = buttonRef.current.getBoundingClientRect();
+    return {
+      top: rect.bottom + 6,
+      right: Math.max(8, window.innerWidth - rect.right),
+    };
+  };
 
   // ---- User menu items ----
   const userMenuItems: UserMenuItem[] = [
@@ -202,114 +318,700 @@ export function Navbar({ onLogout }: NavbarProps) {
     },
   ];
 
-  return (
-    <header
-      className={cn(
-        "sticky top-0 z-30 flex w-full items-center justify-between border-b px-3 backdrop-blur-md transition-colors sm:px-4 md:px-6",
-        isDark
-          ? "border-dark-700/50 bg-dark-900/80"
-          : "border-gray-200 bg-white/80",
-      )}
-      style={{ height: "var(--navbar-height, 64px)" }}
-      role="banner"
-    >
-      {/* ---- Left Section ---- */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-        {/* Mobile hamburger button — 44px touch target */}
-        <button
-          onClick={handleToggleMobileSidebar}
-          className={cn(
-            "flex items-center justify-center rounded-lg transition-colors lg:hidden",
-            isDark
-              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
-          )}
-          style={{ minWidth: "44px", minHeight: "44px" }}
-          aria-label="Toggle sidebar"
-        >
-          <HiOutlineBars3 className="h-5 w-5" />
-        </button>
+  // ---- Notification items (static demo data) ----
+  const notifications = [
+    {
+      title: "Leave Request Approved",
+      message: "Your casual leave for Dec 25-26 has been approved.",
+      time: "2 hours ago",
+      type: "success" as const,
+      unread: true,
+    },
+    {
+      title: "New Employee Joined",
+      message: "Sarah Wilson has joined the Engineering department.",
+      time: "5 hours ago",
+      type: "info" as const,
+      unread: true,
+    },
+    {
+      title: "Attendance Reminder",
+      message: "Don't forget to clock out before end of day.",
+      time: "1 day ago",
+      type: "warning" as const,
+      unread: true,
+    },
+    {
+      title: "System Maintenance",
+      message: "Scheduled maintenance this weekend from 2-4 AM.",
+      time: "2 days ago",
+      type: "info" as const,
+      unread: false,
+    },
+    {
+      title: "Performance Review Due",
+      message: "Q4 performance reviews are due by end of month.",
+      time: "3 days ago",
+      type: "warning" as const,
+      unread: false,
+    },
+  ];
 
-        {/* Page title / breadcrumb — visible on all screens now */}
-        <div className="min-w-0">
-          <h1
-            className={cn(
-              "text-sm sm:text-base md:text-lg font-semibold truncate",
-              isDark ? "text-white" : "text-gray-900",
-            )}
-          >
-            {pageTitle}
-          </h1>
-        </div>
-      </div>
+  // ==================================================
+  // RENDER: Notification Panel (portaled)
+  // ==================================================
 
-      {/* ---- Center Section: Search Bar (hidden on mobile) ---- */}
-      <div className="mx-4 hidden max-w-md flex-1 md:block">
-        <button
-          onClick={handleOpenSearch}
-          className={cn(
-            "flex w-full items-center gap-2.5 rounded-lg border px-3.5 py-2 text-sm transition-colors",
-            isDark
-              ? "border-dark-700 bg-dark-800/50 text-dark-400 hover:border-dark-600 hover:text-dark-300"
-              : "border-gray-200 bg-gray-50 text-gray-400 hover:border-gray-300 hover:text-gray-500",
-          )}
-        >
-          <HiOutlineMagnifyingGlass className="h-4 w-4 flex-shrink-0" />
-          <span className="flex-1 text-left">Search anything…</span>
-          <kbd
+  const renderNotificationPanel = () => {
+    if (!notificationPanelOpen) return null;
+
+    if (isMobile) {
+      // ---- Mobile: Full-screen bottom sheet via portal ----
+      return (
+        <Portal>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-[2px] animate-fade-in"
+            onClick={handleCloseNotifications}
+            aria-hidden="true"
+          />
+          {/* Bottom sheet */}
+          <div
             className={cn(
-              "hidden items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-2xs font-medium sm:flex",
+              "fixed inset-x-0 bottom-0 z-[9999] flex flex-col",
+              "max-h-[85vh] overflow-hidden",
+              "rounded-t-2xl shadow-2xl",
+              "animate-slide-in-up",
               isDark
-                ? "border-dark-600 bg-dark-700 text-dark-400"
-                : "border-gray-200 bg-white text-gray-400",
+                ? "bg-dark-800 border-t border-dark-700"
+                : "bg-white border-t border-gray-200",
+            )}
+            style={{
+              paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)",
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Notifications"
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div
+                className={cn(
+                  "h-1 w-10 rounded-full",
+                  isDark ? "bg-dark-600" : "bg-gray-300",
+                )}
+              />
+            </div>
+
+            {/* Header */}
+            <div
+              className={cn(
+                "flex items-center justify-between px-5 py-3 border-b",
+                isDark ? "border-dark-700" : "border-gray-100",
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <h3
+                  className={cn(
+                    "text-base font-semibold",
+                    isDark ? "text-white" : "text-gray-900",
+                  )}
+                >
+                  Notifications
+                </h3>
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                    isDark
+                      ? "bg-primary-500/10 text-primary-400"
+                      : "bg-primary-50 text-primary-600",
+                  )}
+                >
+                  3 new
+                </span>
+              </div>
+              <button
+                onClick={handleCloseNotifications}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+                  isDark
+                    ? "text-dark-400 hover:bg-dark-700 active:bg-dark-600"
+                    : "text-gray-400 hover:bg-gray-100 active:bg-gray-200",
+                )}
+                aria-label="Close notifications"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Scrollable notification list */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              {notifications.map((notification, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "flex gap-3 px-5 py-4 transition-colors cursor-pointer",
+                    index !== notifications.length - 1 &&
+                      (isDark
+                        ? "border-b border-dark-700/50"
+                        : "border-b border-gray-100"),
+                    notification.unread &&
+                      (isDark ? "bg-dark-700/20" : "bg-primary-50/30"),
+                    isDark ? "active:bg-dark-700/50" : "active:bg-gray-50",
+                  )}
+                >
+                  <div className="mt-1.5 flex-shrink-0">
+                    <span
+                      className={cn(
+                        "block h-2.5 w-2.5 rounded-full",
+                        notification.type === "success" && "bg-success-400",
+                        notification.type === "info" && "bg-info-400",
+                        notification.type === "warning" && "bg-warning-400",
+                      )}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        "text-sm",
+                        notification.unread ? "font-semibold" : "font-medium",
+                        isDark ? "text-dark-100" : "text-gray-900",
+                      )}
+                    >
+                      {notification.title}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-1 text-sm leading-relaxed",
+                        isDark ? "text-dark-400" : "text-gray-500",
+                      )}
+                    >
+                      {notification.message}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-1.5 text-xs",
+                        isDark ? "text-dark-500" : "text-gray-400",
+                      )}
+                    >
+                      {notification.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div
+              className={cn(
+                "border-t px-5 py-2",
+                isDark ? "border-dark-700" : "border-gray-100",
+              )}
+            >
+              <button
+                className={cn(
+                  "flex w-full items-center justify-center rounded-xl py-3 text-sm font-medium transition-colors",
+                  isDark
+                    ? "text-primary-400 hover:bg-dark-700 active:bg-dark-600"
+                    : "text-primary-600 hover:bg-gray-50 active:bg-gray-100",
+                )}
+              >
+                View all notifications
+              </button>
+            </div>
+          </div>
+        </Portal>
+      );
+    }
+
+    // ---- Desktop: Positioned dropdown via portal ----
+    const pos = getDropdownPosition(notifButtonRef, 384);
+
+    return (
+      <Portal>
+        <div
+          ref={notifDropdownRef}
+          className={cn(
+            "fixed z-[9999] w-96 overflow-hidden rounded-xl border shadow-lg animate-fade-in-down",
+            isDark
+              ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
+              : "border-gray-200 bg-white shadow-xl",
+          )}
+          style={{ top: pos.top, right: pos.right }}
+        >
+          {/* Header */}
+          <div
+            className={cn(
+              "flex items-center justify-between border-b px-4 py-3",
+              isDark ? "border-dark-700" : "border-gray-100",
             )}
           >
-            <HiOutlineCommandLine className="h-3 w-3" />
-            <span>K</span>
-          </kbd>
-        </button>
-      </div>
+            <h3
+              className={cn(
+                "text-sm font-semibold",
+                isDark ? "text-white" : "text-gray-900",
+              )}
+            >
+              Notifications
+            </h3>
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-2xs font-medium",
+                isDark
+                  ? "bg-primary-500/10 text-primary-400"
+                  : "bg-primary-50 text-primary-600",
+              )}
+            >
+              3 new
+            </span>
+          </div>
 
-      {/* ---- Right Section ---- */}
-      <div className="flex items-center gap-0.5 sm:gap-1.5">
-        {/* Mobile search button — 44px touch target */}
-        <button
-          onClick={handleOpenSearch}
+          {/* Notification items */}
+          <div className="max-h-[28rem] overflow-y-auto scrollbar-thin">
+            {notifications.map((notification, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "flex gap-3 border-b px-4 py-3 transition-colors cursor-pointer",
+                  isDark
+                    ? "border-dark-700/50 hover:bg-dark-700/50"
+                    : "border-gray-50 hover:bg-gray-50",
+                  notification.unread &&
+                    (isDark ? "bg-dark-700/20" : "bg-primary-50/30"),
+                )}
+              >
+                <div className="mt-1.5 flex-shrink-0">
+                  <span
+                    className={cn(
+                      "block h-2 w-2 rounded-full",
+                      notification.type === "success" && "bg-success-400",
+                      notification.type === "info" && "bg-info-400",
+                      notification.type === "warning" && "bg-warning-400",
+                    )}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={cn(
+                      "text-sm",
+                      notification.unread ? "font-semibold" : "font-medium",
+                      isDark ? "text-dark-100" : "text-gray-900",
+                    )}
+                  >
+                    {notification.title}
+                  </p>
+                  <p
+                    className={cn(
+                      "mt-0.5 text-xs",
+                      isDark ? "text-dark-400" : "text-gray-500",
+                    )}
+                  >
+                    {notification.message}
+                  </p>
+                  <p
+                    className={cn(
+                      "mt-1 text-2xs",
+                      isDark ? "text-dark-500" : "text-gray-400",
+                    )}
+                  >
+                    {notification.time}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div
+            className={cn(
+              "border-t px-4 py-2.5 text-center",
+              isDark ? "border-dark-700" : "border-gray-100",
+            )}
+          >
+            <button
+              className={cn(
+                "text-sm font-medium transition-colors",
+                isDark
+                  ? "text-primary-400 hover:text-primary-300"
+                  : "text-primary-600 hover:text-primary-500",
+              )}
+            >
+              View all notifications
+            </button>
+          </div>
+        </div>
+      </Portal>
+    );
+  };
+
+  // ==================================================
+  // RENDER: User Menu (portaled)
+  // ==================================================
+
+  const renderUserMenu = () => {
+    if (!isUserMenuOpen) return null;
+
+    if (isMobile) {
+      // ---- Mobile: Full-screen bottom sheet via portal ----
+      return (
+        <Portal>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-[2px] animate-fade-in"
+            onClick={handleCloseUserMenu}
+            aria-hidden="true"
+          />
+          {/* Bottom sheet */}
+          <div
+            className={cn(
+              "fixed inset-x-0 bottom-0 z-[9999] flex flex-col",
+              "overflow-hidden rounded-t-2xl shadow-2xl",
+              "animate-slide-in-up",
+              isDark
+                ? "bg-dark-800 border-t border-dark-700"
+                : "bg-white border-t border-gray-200",
+            )}
+            style={{
+              paddingBottom: "max(env(safe-area-inset-bottom, 0px), 0.5rem)",
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="User menu"
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div
+                className={cn(
+                  "h-1 w-10 rounded-full",
+                  isDark ? "bg-dark-600" : "bg-gray-300",
+                )}
+              />
+            </div>
+
+            {/* User info header */}
+            <div
+              className={cn(
+                "flex items-center gap-4 px-5 py-4 border-b",
+                isDark ? "border-dark-700" : "border-gray-100",
+              )}
+            >
+              {/* Avatar */}
+              <div
+                className={cn(
+                  "flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-base font-semibold",
+                  avatarUrl ? "" : "bg-primary-600 text-white",
+                )}
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{initials}</span>
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p
+                  className={cn(
+                    "text-base font-semibold truncate",
+                    isDark ? "text-white" : "text-gray-900",
+                  )}
+                >
+                  {displayName}
+                </p>
+                <p
+                  className={cn(
+                    "mt-0.5 truncate text-sm",
+                    isDark ? "text-dark-400" : "text-gray-500",
+                  )}
+                >
+                  {user?.email}
+                </p>
+                <span
+                  className={cn(
+                    "mt-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                    userRole === "ADMIN"
+                      ? isDark
+                        ? "bg-primary-500/10 text-primary-400"
+                        : "bg-primary-50 text-primary-600"
+                      : userRole === "HR"
+                        ? isDark
+                          ? "bg-accent-500/10 text-accent-400"
+                          : "bg-accent-50 text-accent-600"
+                        : isDark
+                          ? "bg-success-500/10 text-success-400"
+                          : "bg-success-50 text-success-600",
+                  )}
+                >
+                  {roleLabel}
+                </span>
+              </div>
+
+              <button
+                onClick={handleCloseUserMenu}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-full transition-colors self-start",
+                  isDark
+                    ? "text-dark-400 hover:bg-dark-700 active:bg-dark-600"
+                    : "text-gray-400 hover:bg-gray-100 active:bg-gray-200",
+                )}
+                aria-label="Close menu"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Menu items */}
+            <div className="py-2 px-2">
+              {userMenuItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Fragment key={item.label}>
+                    {item.divider && (
+                      <div
+                        className={cn(
+                          "mx-3 my-2 h-px",
+                          isDark ? "bg-dark-700" : "bg-gray-100",
+                        )}
+                      />
+                    )}
+                    <button
+                      onClick={item.onClick}
+                      className={cn(
+                        "flex w-full items-center gap-4 rounded-xl px-4 py-3.5 text-base font-medium transition-colors",
+                        item.variant === "danger"
+                          ? isDark
+                            ? "text-danger-400 hover:bg-danger-500/10 active:bg-danger-500/20"
+                            : "text-danger-600 hover:bg-danger-50 active:bg-danger-100"
+                          : isDark
+                            ? "text-dark-200 hover:bg-dark-700 active:bg-dark-600"
+                            : "text-gray-700 hover:bg-gray-50 active:bg-gray-100",
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </button>
+                  </Fragment>
+                );
+              })}
+            </div>
+          </div>
+        </Portal>
+      );
+    }
+
+    // ---- Desktop: Positioned dropdown via portal ----
+    const pos = getDropdownPosition(userMenuButtonRef, 224);
+
+    return (
+      <Portal>
+        <div
+          ref={userMenuDropdownRef}
           className={cn(
-            "flex items-center justify-center rounded-lg transition-colors md:hidden",
+            "fixed z-[9999] w-56 overflow-hidden rounded-xl border shadow-lg animate-fade-in-down",
             isDark
-              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
+              ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
+              : "border-gray-200 bg-white shadow-xl",
           )}
-          style={{ minWidth: "44px", minHeight: "44px" }}
-          aria-label="Search"
+          style={{ top: pos.top, right: pos.right }}
         >
-          <HiOutlineMagnifyingGlass className="h-5 w-5" />
-        </button>
+          {/* User info header */}
+          <div
+            className={cn(
+              "border-b px-4 py-3",
+              isDark ? "border-dark-700" : "border-gray-100",
+            )}
+          >
+            <p
+              className={cn(
+                "text-sm font-semibold",
+                isDark ? "text-white" : "text-gray-900",
+              )}
+            >
+              {displayName}
+            </p>
+            <p
+              className={cn(
+                "mt-0.5 truncate text-xs",
+                isDark ? "text-dark-400" : "text-gray-500",
+              )}
+            >
+              {user?.email}
+            </p>
+            <span
+              className={cn(
+                "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium",
+                userRole === "ADMIN"
+                  ? isDark
+                    ? "bg-primary-500/10 text-primary-400"
+                    : "bg-primary-50 text-primary-600"
+                  : userRole === "HR"
+                    ? isDark
+                      ? "bg-accent-500/10 text-accent-400"
+                      : "bg-accent-50 text-accent-600"
+                    : isDark
+                      ? "bg-success-500/10 text-success-400"
+                      : "bg-success-50 text-success-600",
+              )}
+            >
+              {roleLabel}
+            </span>
+          </div>
 
-        {/* Theme toggle — 44px touch target */}
-        <button
-          onClick={handleToggleTheme}
-          className={cn(
-            "flex items-center justify-center rounded-lg transition-colors",
-            isDark
-              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
-          )}
-          style={{ minWidth: "44px", minHeight: "44px" }}
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {isDark ? (
-            <HiOutlineSun className="h-5 w-5" />
-          ) : (
-            <HiOutlineMoon className="h-5 w-5" />
-          )}
-        </button>
+          {/* Menu items */}
+          <div className="py-1.5">
+            {userMenuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Fragment key={item.label}>
+                  {item.divider && (
+                    <div
+                      className={cn(
+                        "mx-3 my-1 h-px",
+                        isDark ? "bg-dark-700" : "bg-gray-100",
+                      )}
+                    />
+                  )}
+                  <button
+                    onClick={item.onClick}
+                    className={cn(
+                      "flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors",
+                      item.variant === "danger"
+                        ? isDark
+                          ? "text-danger-400 hover:bg-danger-500/10"
+                          : "text-danger-600 hover:bg-danger-50"
+                        : isDark
+                          ? "text-dark-300 hover:bg-dark-700 hover:text-white"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </button>
+                </Fragment>
+              );
+            })}
+          </div>
+        </div>
+      </Portal>
+    );
+  };
 
-        {/* Notifications — 44px touch target */}
-        <div className="relative" ref={notificationRef}>
+  // ==================================================
+  // RENDER: Main Navbar
+  // ==================================================
+
+  return (
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-30 flex w-full items-center justify-between border-b px-3 backdrop-blur-md transition-colors sm:px-4 md:px-6",
+          isDark
+            ? "border-dark-700/50 bg-dark-900/80"
+            : "border-gray-200 bg-white/80",
+        )}
+        style={{ height: "var(--navbar-height, 64px)" }}
+        role="banner"
+      >
+        {/* ---- Left Section ---- */}
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-shrink">
+          {/* Mobile hamburger button */}
           <button
+            onClick={handleToggleMobileSidebar}
+            className={cn(
+              "flex items-center justify-center rounded-lg transition-colors lg:hidden",
+              isDark
+                ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
+            )}
+            style={{ minWidth: "40px", minHeight: "40px" }}
+            aria-label="Toggle sidebar"
+          >
+            <HiOutlineBars3 className="h-5 w-5" />
+          </button>
+
+          {/* Page title */}
+          <div className="min-w-0">
+            <h1
+              className={cn(
+                "text-sm sm:text-base md:text-lg font-semibold truncate",
+                isDark ? "text-white" : "text-gray-900",
+              )}
+            >
+              {pageTitle}
+            </h1>
+          </div>
+        </div>
+
+        {/* ---- Center Section: Search Bar (hidden on mobile) ---- */}
+        <div className="mx-4 hidden max-w-md flex-1 md:block">
+          <button
+            onClick={handleOpenSearch}
+            className={cn(
+              "flex w-full items-center gap-2.5 rounded-lg border px-3.5 py-2 text-sm transition-colors",
+              isDark
+                ? "border-dark-700 bg-dark-800/50 text-dark-400 hover:border-dark-600 hover:text-dark-300"
+                : "border-gray-200 bg-gray-50 text-gray-400 hover:border-gray-300 hover:text-gray-500",
+            )}
+          >
+            <HiOutlineMagnifyingGlass className="h-4 w-4 flex-shrink-0" />
+            <span className="flex-1 text-left">Search anything…</span>
+            <kbd
+              className={cn(
+                "hidden items-center gap-0.5 rounded-md border px-1.5 py-0.5 text-2xs font-medium sm:flex",
+                isDark
+                  ? "border-dark-600 bg-dark-700 text-dark-400"
+                  : "border-gray-200 bg-white text-gray-400",
+              )}
+            >
+              <HiOutlineCommandLine className="h-3 w-3" />
+              <span>K</span>
+            </kbd>
+          </button>
+        </div>
+
+        {/* ---- Right Section ---- */}
+        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+          {/* Mobile search button */}
+          <button
+            onClick={handleOpenSearch}
+            className={cn(
+              "flex items-center justify-center rounded-lg transition-colors md:hidden",
+              isDark
+                ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
+            )}
+            style={{ minWidth: "40px", minHeight: "40px" }}
+            aria-label="Search"
+          >
+            <HiOutlineMagnifyingGlass className="h-5 w-5" />
+          </button>
+
+          {/* Theme toggle */}
+          <button
+            onClick={handleToggleTheme}
+            className={cn(
+              "flex items-center justify-center rounded-lg transition-colors",
+              isDark
+                ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
+            )}
+            style={{ minWidth: "40px", minHeight: "40px" }}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? (
+              <HiOutlineSun className="h-5 w-5" />
+            ) : (
+              <HiOutlineMoon className="h-5 w-5" />
+            )}
+          </button>
+
+          {/* Notifications button */}
+          <button
+            ref={notifButtonRef}
             onClick={handleToggleNotifications}
             className={cn(
               "relative flex items-center justify-center rounded-lg transition-colors",
@@ -321,235 +1023,39 @@ export function Navbar({ onLogout }: NavbarProps) {
                   ? "bg-dark-800 text-dark-200"
                   : "bg-gray-100 text-gray-700"),
             )}
-            style={{ minWidth: "44px", minHeight: "44px" }}
+            style={{ minWidth: "40px", minHeight: "40px" }}
             aria-label="Notifications"
             aria-expanded={notificationPanelOpen}
             title="Notifications"
           >
             <HiOutlineBell className="h-5 w-5" />
-            {/* Notification badge dot */}
-            <span className="absolute right-2 top-2 flex h-2 w-2">
+            {/* Badge dot */}
+            <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
             </span>
           </button>
 
-          {/* Notification Dropdown Panel — responsive: bottom sheet on mobile, dropdown on desktop */}
-          {notificationPanelOpen && (
-            <>
-              {/* Mobile overlay backdrop */}
-              <div
-                className="fixed inset-0 z-40 bg-black/40 sm:hidden"
-                onClick={() => dispatch(toggleNotificationPanel())}
-                aria-hidden="true"
-              />
-              <div
-                className={cn(
-                  // Mobile: bottom sheet
-                  "fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-hidden rounded-t-2xl border-t shadow-modal animate-slide-in-up",
-                  // Desktop: dropdown
-                  "sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:z-50 sm:mt-1.5 sm:w-96 sm:rounded-xl sm:border sm:shadow-dropdown sm:animate-fade-in-down",
-                  isDark
-                    ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
-                    : "border-gray-200 bg-white shadow-lg",
-                )}
-                style={{
-                  paddingBottom: "var(--safe-area-bottom, 0px)",
-                }}
-              >
-                {/* Mobile drag handle */}
-                <div className="modal-drag-handle" />
+          {/* Divider — hidden on very small screens */}
+          <div
+            className={cn(
+              "mx-0.5 hidden h-8 w-px sm:mx-1 sm:block",
+              isDark ? "bg-dark-700" : "bg-gray-200",
+            )}
+          />
 
-                {/* Panel Header */}
-                <div
-                  className={cn(
-                    "flex items-center justify-between border-b px-4 py-3",
-                    isDark ? "border-dark-700" : "border-gray-100",
-                  )}
-                >
-                  <h3
-                    className={cn(
-                      "text-sm font-semibold",
-                      isDark ? "text-white" : "text-gray-900",
-                    )}
-                  >
-                    Notifications
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "rounded-full px-2 py-0.5 text-2xs font-medium",
-                        isDark
-                          ? "bg-primary-500/10 text-primary-400"
-                          : "bg-primary-50 text-primary-600",
-                      )}
-                    >
-                      3 new
-                    </span>
-                    {/* Close button for mobile */}
-                    <button
-                      onClick={() => dispatch(toggleNotificationPanel())}
-                      className={cn(
-                        "flex items-center justify-center rounded-md p-1 sm:hidden",
-                        isDark
-                          ? "text-dark-400 hover:bg-dark-700"
-                          : "text-gray-400 hover:bg-gray-100",
-                      )}
-                      aria-label="Close notifications"
-                    >
-                      <HiOutlineChevronDown className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Notification Items */}
-                <div className="max-h-[60vh] sm:max-h-[28rem] overflow-y-auto scrollbar-thin">
-                  {[
-                    {
-                      title: "Leave Request Approved",
-                      message:
-                        "Your casual leave for Dec 25-26 has been approved.",
-                      time: "2 hours ago",
-                      type: "success" as const,
-                      unread: true,
-                    },
-                    {
-                      title: "New Employee Joined",
-                      message:
-                        "Sarah Wilson has joined the Engineering department.",
-                      time: "5 hours ago",
-                      type: "info" as const,
-                      unread: true,
-                    },
-                    {
-                      title: "Attendance Reminder",
-                      message: "Don't forget to clock out before end of day.",
-                      time: "1 day ago",
-                      type: "warning" as const,
-                      unread: true,
-                    },
-                    {
-                      title: "System Maintenance",
-                      message:
-                        "Scheduled maintenance this weekend from 2-4 AM.",
-                      time: "2 days ago",
-                      type: "info" as const,
-                      unread: false,
-                    },
-                    {
-                      title: "Performance Review Due",
-                      message:
-                        "Q4 performance reviews are due by end of month.",
-                      time: "3 days ago",
-                      type: "warning" as const,
-                      unread: false,
-                    },
-                  ].map((notification, index) => (
-                    <div
-                      key={index}
-                      className={cn(
-                        "flex gap-3 border-b px-4 py-3 transition-colors cursor-pointer",
-                        isDark
-                          ? "border-dark-700/50 hover:bg-dark-700/50"
-                          : "border-gray-50 hover:bg-gray-50",
-                        notification.unread &&
-                          (isDark ? "bg-dark-700/20" : "bg-primary-50/30"),
-                      )}
-                    >
-                      {/* Type indicator dot */}
-                      <div className="mt-1.5 flex-shrink-0">
-                        <span
-                          className={cn(
-                            "block h-2 w-2 rounded-full",
-                            notification.type === "success" && "bg-success-400",
-                            notification.type === "info" && "bg-info-400",
-                            notification.type === "warning" && "bg-warning-400",
-                          )}
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={cn(
-                            "text-sm",
-                            notification.unread
-                              ? "font-semibold"
-                              : "font-medium",
-                            isDark ? "text-dark-100" : "text-gray-900",
-                          )}
-                        >
-                          {notification.title}
-                        </p>
-                        <p
-                          className={cn(
-                            "mt-0.5 text-xs whitespace-pre-wrap break-words",
-                            isDark ? "text-dark-400" : "text-gray-500",
-                          )}
-                        >
-                          {notification.message}
-                        </p>
-                        <p
-                          className={cn(
-                            "mt-1 text-2xs",
-                            isDark ? "text-dark-500" : "text-gray-400",
-                          )}
-                        >
-                          {notification.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Panel Footer */}
-                <div
-                  className={cn(
-                    "border-t px-4 py-3 sm:py-2.5 text-center",
-                    isDark ? "border-dark-700" : "border-gray-100",
-                  )}
-                >
-                  <button
-                    className={cn(
-                      "text-xs sm:text-sm font-medium transition-colors py-1",
-                      isDark
-                        ? "text-primary-400 hover:text-primary-300"
-                        : "text-primary-600 hover:text-primary-500",
-                    )}
-                    style={{
-                      minHeight: "44px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: "100%",
-                    }}
-                  >
-                    View all notifications
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Divider — hidden on very small screens */}
-        <div
-          className={cn(
-            "mx-0.5 hidden h-8 w-px sm:mx-1 sm:block",
-            isDark ? "bg-dark-700" : "bg-gray-200",
-          )}
-        />
-
-        {/* User Menu Dropdown */}
-        <div className="relative" ref={userMenuRef}>
+          {/* User Menu Button */}
           <button
+            ref={userMenuButtonRef}
             onClick={handleUserMenuToggle}
             className={cn(
-              "flex items-center gap-1.5 sm:gap-2.5 rounded-lg px-1.5 sm:px-2 py-1.5 transition-colors",
+              "flex items-center gap-1.5 sm:gap-2 rounded-lg px-1.5 sm:px-2 py-1.5 transition-colors",
               isDark
                 ? "hover:bg-dark-800 active:bg-dark-700"
                 : "hover:bg-gray-100 active:bg-gray-200",
               isUserMenuOpen && (isDark ? "bg-dark-800" : "bg-gray-100"),
             )}
-            style={{ minHeight: "44px" }}
+            style={{ minHeight: "40px" }}
             aria-expanded={isUserMenuOpen}
             aria-haspopup="true"
             aria-label={`User menu for ${displayName}`}
@@ -601,138 +1107,13 @@ export function Navbar({ onLogout }: NavbarProps) {
               )}
             />
           </button>
-
-          {/* Dropdown Menu — responsive: bottom sheet on mobile, dropdown on desktop */}
-          {isUserMenuOpen && (
-            <>
-              {/* Mobile overlay backdrop */}
-              <div
-                className="fixed inset-0 z-40 bg-black/40 sm:hidden"
-                onClick={() => setIsUserMenuOpen(false)}
-                aria-hidden="true"
-              />
-              <div
-                className={cn(
-                  // Mobile: bottom sheet
-                  "fixed inset-x-0 bottom-0 z-50 overflow-hidden rounded-t-2xl border-t shadow-modal animate-slide-in-up",
-                  // Desktop: dropdown
-                  "sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:z-50 sm:mt-1.5 sm:w-56 sm:rounded-xl sm:border sm:shadow-dropdown sm:animate-fade-in-down",
-                  isDark
-                    ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
-                    : "border-gray-200 bg-white",
-                )}
-                style={{
-                  paddingBottom: "var(--safe-area-bottom, 0px)",
-                }}
-              >
-                {/* Mobile drag handle */}
-                <div className="modal-drag-handle" />
-
-                {/* User info header */}
-                <div
-                  className={cn(
-                    "border-b px-4 py-3",
-                    isDark ? "border-dark-700" : "border-gray-100",
-                  )}
-                >
-                  <div className="flex items-center gap-3 sm:block">
-                    {/* Avatar shown in mobile header */}
-                    <div
-                      className={cn(
-                        "flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold sm:hidden",
-                        avatarUrl ? "" : "bg-primary-600 text-white",
-                      )}
-                    >
-                      {avatarUrl ? (
-                        <img
-                          src={avatarUrl}
-                          alt={displayName}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span>{initials}</span>
-                      )}
-                    </div>
-                    <div>
-                      <p
-                        className={cn(
-                          "text-sm font-semibold",
-                          isDark ? "text-white" : "text-gray-900",
-                        )}
-                      >
-                        {displayName}
-                      </p>
-                      <p
-                        className={cn(
-                          "mt-0.5 truncate text-xs",
-                          isDark ? "text-dark-400" : "text-gray-500",
-                        )}
-                      >
-                        {user?.email}
-                      </p>
-                      <span
-                        className={cn(
-                          "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium",
-                          userRole === "ADMIN"
-                            ? isDark
-                              ? "bg-primary-500/10 text-primary-400"
-                              : "bg-primary-50 text-primary-600"
-                            : userRole === "HR"
-                              ? isDark
-                                ? "bg-accent-500/10 text-accent-400"
-                                : "bg-accent-50 text-accent-600"
-                              : isDark
-                                ? "bg-success-500/10 text-success-400"
-                                : "bg-success-50 text-success-600",
-                        )}
-                      >
-                        {roleLabel}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Menu items — larger touch targets on mobile */}
-                <div className="py-1.5">
-                  {userMenuItems.map((item, index) => {
-                    const Icon = item.icon;
-                    return (
-                      <Fragment key={item.label}>
-                        {item.divider && (
-                          <div
-                            className={cn(
-                              "mx-3 my-1 h-px",
-                              isDark ? "bg-dark-700" : "bg-gray-100",
-                            )}
-                          />
-                        )}
-                        <button
-                          onClick={item.onClick}
-                          className={cn(
-                            "flex w-full items-center gap-3 px-4 py-3 sm:py-2 text-sm transition-colors",
-                            item.variant === "danger"
-                              ? isDark
-                                ? "text-danger-400 hover:bg-danger-500/10 active:bg-danger-500/20"
-                                : "text-danger-600 hover:bg-danger-50 active:bg-danger-100"
-                              : isDark
-                                ? "text-dark-300 hover:bg-dark-700 hover:text-white active:bg-dark-600"
-                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100",
-                          )}
-                          style={{ minHeight: "44px" }}
-                        >
-                          <Icon className="h-5 w-5 sm:h-4 sm:w-4" />
-                          <span>{item.label}</span>
-                        </button>
-                      </Fragment>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Portaled overlays */}
+      {renderNotificationPanel()}
+      {renderUserMenu()}
+    </>
   );
 }
 

@@ -1177,7 +1177,7 @@ async function main() {
   // ------------------------------------------
   console.info('🏗️  Assigning department heads...');
 
-  // Engineering head = Rajesh Kumar (admin, index 0)
+  // Engineering head = Abhishek Mishra (admin, index 0)
   await prisma.department.update({
     where: { code: 'ENG' },
     data: { headId: employeeIds[0] },
@@ -1208,7 +1208,7 @@ async function main() {
   // ------------------------------------------
   console.info('👔 Setting up manager relationships...');
 
-  // Engineering employees report to Rajesh Kumar (index 0)
+  // Engineering employees report to Abhishek Mishra (index 0)
   const engineeringEmployeeIndices = [2, 3, 4, 10, 12, 18, 20, 22, 24];
   for (const idx of engineeringEmployeeIndices) {
     if (idx < employeeIds.length && idx !== 0) {

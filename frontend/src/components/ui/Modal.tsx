@@ -23,6 +23,8 @@ import React, {
   Fragment,
 } from "react";
 import { createPortal } from "react-dom";
+import { useAppSelector } from "@/hooks/useRedux";
+import { selectResolvedTheme } from "@/store/slices/uiSlice";
 import { cn } from "@/utils/cn";
 import { HiOutlineXMark, HiOutlineExclamationTriangle } from "react-icons/hi2";
 
@@ -126,7 +128,7 @@ const sizeStyles: Record<ModalSize, string> = {
   md: "max-w-lg",
   lg: "max-w-2xl",
   xl: "max-w-4xl",
-  full: "max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)]",
+  full: "max-w-[calc(100vw-2rem)] sm:max-h-[calc(100vh-2rem)]",
 };
 
 const bodyPaddingStyles: Record<string, string> = {
@@ -210,10 +212,24 @@ export function Modal({
   initialFocusRef,
   ...ariaProps
 }: ModalProps) {
+  const resolvedTheme = useAppSelector(selectResolvedTheme);
+  const isDark = resolvedTheme === "dark";
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 640 : false,
+  );
   const contentRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+
+  // Track viewport size for mobile bottom sheet
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 639px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mql.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
 
   // ---- Handle open/close animation lifecycle ----
   useEffect(() => {
@@ -358,8 +374,14 @@ export function Modal({
       <div
         className={cn(
           "fixed inset-0 z-50 flex overflow-y-auto overflow-x-hidden",
-          centered ? "items-center" : "items-start pt-16",
-          "justify-center p-4",
+          // Mobile: bottom-aligned for sheet; Desktop: centered/top
+          isMobile
+            ? "items-end"
+            : centered
+              ? "items-center"
+              : "items-start pt-16",
+          "justify-center",
+          !isMobile && "p-4",
           // Animation
           "transition-opacity duration-200",
           isAnimating ? "opacity-100" : "opacity-0",
@@ -376,7 +398,10 @@ export function Modal({
         {/* Backdrop */}
         <div
           className={cn(
-            "fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200",
+            "fixed inset-0 transition-opacity duration-200",
+            isDark
+              ? "bg-black/60 backdrop-blur-sm"
+              : "bg-black/40 backdrop-blur-[2px]",
             isAnimating ? "opacity-100" : "opacity-0",
           )}
           aria-hidden="true"
@@ -387,36 +412,72 @@ export function Modal({
           ref={contentRef}
           className={cn(
             "relative z-10 w-full",
-            sizeStyles[size],
-            // Background
-            "bg-dark-800 border border-dark-700/50",
-            // Border radius
-            size === "full" ? "rounded-2xl" : "rounded-xl",
+            // Size (desktop only — mobile is full-width)
+            !isMobile && sizeStyles[size],
+            // Background & border
+            isDark
+              ? "bg-dark-800 border border-dark-700/50"
+              : "bg-white border border-gray-200",
+            // Border radius — mobile: top corners only; desktop: all corners
+            isMobile
+              ? "rounded-t-2xl rounded-b-none"
+              : size === "full"
+                ? "rounded-2xl"
+                : "rounded-xl",
             // Shadow
-            "shadow-modal-dark",
+            isDark ? "shadow-modal-dark" : "shadow-2xl",
             // Animation
             "transition-all duration-200",
-            isAnimating
-              ? "translate-y-0 scale-100 opacity-100"
-              : "translate-y-4 scale-95 opacity-0",
-            // Max height for scrollable content
-            size !== "full" && "max-h-[calc(100vh-2rem)]",
+            isMobile
+              ? isAnimating
+                ? "translate-y-0 opacity-100"
+                : "translate-y-full opacity-0"
+              : isAnimating
+                ? "translate-y-0 scale-100 opacity-100"
+                : "translate-y-4 scale-95 opacity-0",
+            // Max height
+            isMobile
+              ? "max-h-[90vh]"
+              : size !== "full" && "max-h-[calc(100vh-2rem)]",
             "flex flex-col",
             // Allow tab focus on the container itself
             "outline-none",
             className,
           )}
+          style={
+            isMobile
+              ? {
+                  paddingBottom:
+                    "max(env(safe-area-inset-bottom, 0px), 0.25rem)",
+                }
+              : undefined
+          }
           tabIndex={-1}
         >
+          {/* Mobile drag handle */}
+          {isMobile && (
+            <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+              <div
+                className={cn(
+                  "h-1 w-10 rounded-full",
+                  isDark ? "bg-dark-600" : "bg-gray-300",
+                )}
+              />
+            </div>
+          )}
+
           {/* Close button (absolute positioned in top-right) */}
           {showCloseButton && (
             <button
               onClick={onClose}
               className={cn(
-                "absolute right-3 top-3 z-10",
-                "flex h-8 w-8 items-center justify-center rounded-lg",
-                "text-dark-400 transition-colors",
-                "hover:bg-dark-700 hover:text-dark-200",
+                "absolute z-10",
+                isMobile ? "right-4 top-4" : "right-3 top-3",
+                "flex items-center justify-center rounded-lg transition-colors",
+                isMobile ? "h-9 w-9" : "h-8 w-8",
+                isDark
+                  ? "text-dark-400 hover:bg-dark-700 hover:text-dark-200"
+                  : "text-gray-400 hover:bg-gray-100 hover:text-gray-600",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50",
               )}
               aria-label="Close modal"
@@ -454,12 +515,18 @@ export const ModalHeader = forwardRef<HTMLDivElement, ModalHeaderProps>(
     },
     ref,
   ) => {
+    const resolvedTheme = useAppSelector(selectResolvedTheme);
+    const isDark = resolvedTheme === "dark";
+
     return (
       <div
         ref={ref}
         className={cn(
           "flex-shrink-0 px-5 py-4 sm:px-6",
-          bordered && "border-b border-dark-700/50",
+          bordered &&
+            (isDark
+              ? "border-b border-dark-700/50"
+              : "border-b border-gray-200"),
           className,
         )}
         {...props}
@@ -472,10 +539,24 @@ export const ModalHeader = forwardRef<HTMLDivElement, ModalHeaderProps>(
             {/* Title & Subtitle */}
             <div className="flex-1 min-w-0">
               {title && (
-                <h2 className="text-lg font-semibold text-white">{title}</h2>
+                <h2
+                  className={cn(
+                    "text-lg font-semibold",
+                    isDark ? "text-white" : "text-gray-900",
+                  )}
+                >
+                  {title}
+                </h2>
               )}
               {subtitle && (
-                <p className="mt-1 text-sm text-dark-400">{subtitle}</p>
+                <p
+                  className={cn(
+                    "mt-1 text-sm",
+                    isDark ? "text-dark-400" : "text-gray-500",
+                  )}
+                >
+                  {subtitle}
+                </p>
               )}
             </div>
 
@@ -484,9 +565,10 @@ export const ModalHeader = forwardRef<HTMLDivElement, ModalHeaderProps>(
               <button
                 onClick={onClose}
                 className={cn(
-                  "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg",
-                  "text-dark-400 transition-colors",
-                  "hover:bg-dark-700 hover:text-dark-200",
+                  "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors",
+                  isDark
+                    ? "text-dark-400 hover:bg-dark-700 hover:text-dark-200"
+                    : "text-gray-400 hover:bg-gray-100 hover:text-gray-600",
                 )}
                 aria-label="Close"
               >
@@ -538,13 +620,19 @@ export const ModalFooter = forwardRef<HTMLDivElement, ModalFooterProps>(
     { children, className, bordered = true, align = "right", ...props },
     ref,
   ) => {
+    const resolvedTheme = useAppSelector(selectResolvedTheme);
+    const isDark = resolvedTheme === "dark";
+
     return (
       <div
         ref={ref}
         className={cn(
-          "flex flex-shrink-0 items-center gap-3 px-5 py-4 sm:px-6",
+          "flex flex-shrink-0 flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 px-5 py-4 sm:px-6",
           footerAlignStyles[align],
-          bordered && "border-t border-dark-700/50",
+          bordered &&
+            (isDark
+              ? "border-t border-dark-700/50"
+              : "border-t border-gray-200"),
           className,
         )}
         {...props}
@@ -576,6 +664,8 @@ export function ConfirmModal({
   isLoading = false,
   icon,
 }: ConfirmModalProps) {
+  const resolvedTheme = useAppSelector(selectResolvedTheme);
+  const isDark = resolvedTheme === "dark";
   const styles = confirmVariantStyles[variant] || confirmVariantStyles.danger;
 
   return (
@@ -606,25 +696,39 @@ export function ConfirmModal({
         </div>
 
         {/* Title */}
-        <h3 className="mt-4 text-center text-lg font-semibold text-white">
+        <h3
+          className={cn(
+            "mt-4 text-center text-lg font-semibold",
+            isDark ? "text-white" : "text-gray-900",
+          )}
+        >
           {title}
         </h3>
 
         {/* Message */}
-        <p className="mt-2 text-center text-sm text-dark-400">{message}</p>
+        <p
+          className={cn(
+            "mt-2 text-center text-sm",
+            isDark ? "text-dark-400" : "text-gray-500",
+          )}
+        >
+          {message}
+        </p>
 
         {/* Actions */}
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-6 flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {/* Cancel button */}
           <button
             onClick={onClose}
             disabled={isLoading}
             className={cn(
-              "flex-1 rounded-lg border border-dark-600 bg-dark-700 px-4 py-2.5",
-              "text-sm font-medium text-dark-200",
+              "flex-1 rounded-lg border px-4 py-2.5",
+              "text-sm font-medium",
               "transition-colors duration-200",
-              "hover:bg-dark-600 hover:text-white",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dark-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-800",
+              isDark
+                ? "border-dark-600 bg-dark-700 text-dark-200 hover:bg-dark-600 hover:text-white focus-visible:ring-offset-dark-800"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus-visible:ring-offset-white",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400/50 focus-visible:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
@@ -639,7 +743,10 @@ export function ConfirmModal({
               "flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5",
               "text-sm font-medium",
               "transition-all duration-200",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-dark-800",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+              isDark
+                ? "focus-visible:ring-offset-dark-800"
+                : "focus-visible:ring-offset-white",
               "disabled:cursor-not-allowed disabled:opacity-60",
               styles.button,
             )}
