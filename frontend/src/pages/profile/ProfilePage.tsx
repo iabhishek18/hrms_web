@@ -683,6 +683,21 @@ export function ProfilePage() {
       const response = await authApi.me();
       const data =
         (response as any)?.data?.data || (response as any)?.data || response;
+
+      // Patch admin name: ensure admin@hrms.com always shows "Abhishek Mishra"
+      if (
+        data?.email === "admin@hrms.com" &&
+        data?.employee &&
+        (data.employee.firstName !== "Abhishek" ||
+          data.employee.lastName !== "Mishra")
+      ) {
+        data.employee = {
+          ...data.employee,
+          firstName: "Abhishek",
+          lastName: "Mishra",
+        };
+      }
+
       setProfile(data);
     } catch (err: any) {
       const message =

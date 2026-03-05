@@ -1344,11 +1344,11 @@ export function DashboardPage() {
           >
             {departmentChartData.length > 0 ? (
               <div className="flex flex-col items-center">
-                <div className="w-full max-w-[260px] mx-auto">
+                <div className="w-full max-w-[300px] mx-auto">
                   <ResponsiveContainer
                     width="100%"
-                    height={200}
-                    className="sm:!h-[240px]"
+                    height={240}
+                    className="sm:!h-[280px]"
                   >
                     <PieChart>
                       <Pie
@@ -1356,7 +1356,7 @@ export function DashboardPage() {
                         cx="50%"
                         cy="50%"
                         innerRadius="30%"
-                        outerRadius="50%"
+                        outerRadius="55%"
                         paddingAngle={3}
                         dataKey="value"
                         labelLine={false}
@@ -1741,15 +1741,15 @@ export function DashboardPage() {
           >
             {attendanceChartData.length > 0 ? (
               <div className="flex flex-col items-center">
-                <div className="relative w-full max-w-[240px] mx-auto">
+                <div className="relative w-full max-w-[300px] mx-auto">
                   <ResponsiveContainer width="100%" aspect={1}>
                     <PieChart>
                       <Pie
                         data={attendanceChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius="25%"
-                        outerRadius="40%"
+                        innerRadius="30%"
+                        outerRadius="55%"
                         paddingAngle={3}
                         dataKey="value"
                         labelLine={false}
