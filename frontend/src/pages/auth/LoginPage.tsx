@@ -1,7 +1,8 @@
 // ============================================
-// Login Page
+// Login Page — Enhanced with Email Autocomplete
 // ============================================
 // Provides email/password login form with:
+//   - Email autocomplete/suggestions as user types
 //   - Form validation using React Hook Form + Zod
 //   - Error handling with user-friendly messages
 //   - Loading state during authentication
@@ -9,7 +10,7 @@
 //   - Link to registration page
 //   - Dark theme matching the reference dashboard
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +26,8 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineInformationCircle,
   HiOutlineArrowRightOnRectangle,
+  HiOutlineUserCircle,
+  HiOutlineShieldCheck,
 } from "react-icons/hi2";
 
 // ============================================
@@ -56,6 +59,7 @@ const DEMO_CREDENTIALS = [
     color: "text-primary-400",
     bg: "bg-primary-500/10",
     border: "border-primary-500/20",
+    icon: HiOutlineShieldCheck,
   },
   {
     role: "HR",
@@ -64,6 +68,7 @@ const DEMO_CREDENTIALS = [
     color: "text-accent-400",
     bg: "bg-accent-500/10",
     border: "border-accent-500/20",
+    icon: HiOutlineUserCircle,
   },
   {
     role: "Employee",
@@ -72,7 +77,51 @@ const DEMO_CREDENTIALS = [
     color: "text-success-400",
     bg: "bg-success-500/10",
     border: "border-success-500/20",
+    icon: HiOutlineUserCircle,
   },
+];
+
+// ============================================
+// Known Emails for Autocomplete
+// ============================================
+// These are the seeded user emails from the database.
+// In a production app, you could fetch these from an
+// API endpoint like /api/auth/email-suggestions.
+
+const KNOWN_EMAILS = [
+  { email: "admin@hrms.com", role: "Admin", name: "Abhishek Mishra" },
+  { email: "hr@hrms.com", role: "HR", name: "Priya Sharma" },
+  { email: "john.doe@hrms.com", role: "Employee", name: "John Doe" },
+  { email: "sarah.wilson@hrms.com", role: "Employee", name: "Sarah Wilson" },
+  { email: "michael.chen@hrms.com", role: "Employee", name: "Michael Chen" },
+  { email: "aisha.patel@hrms.com", role: "Employee", name: "Aisha Patel" },
+  { email: "david.smith@hrms.com", role: "Employee", name: "David Smith" },
+  { email: "emily.johnson@hrms.com", role: "Employee", name: "Emily Johnson" },
+  { email: "raj.malhotra@hrms.com", role: "Employee", name: "Raj Malhotra" },
+  { email: "maria.garcia@hrms.com", role: "Employee", name: "Maria Garcia" },
+  { email: "tom.anderson@hrms.com", role: "Employee", name: "Tom Anderson" },
+  { email: "neha.singh@hrms.com", role: "Employee", name: "Neha Singh" },
+  { email: "james.brown@hrms.com", role: "Employee", name: "James Brown" },
+  { email: "ananya.reddy@hrms.com", role: "Employee", name: "Ananya Reddy" },
+  { email: "robert.taylor@hrms.com", role: "Employee", name: "Robert Taylor" },
+  { email: "deepika.nair@hrms.com", role: "Employee", name: "Deepika Nair" },
+  { email: "william.lee@hrms.com", role: "Employee", name: "William Lee" },
+  { email: "kavita.joshi@hrms.com", role: "Employee", name: "Kavita Joshi" },
+  {
+    email: "chris.martinez@hrms.com",
+    role: "Employee",
+    name: "Chris Martinez",
+  },
+  { email: "sanjay.gupta@hrms.com", role: "Employee", name: "Sanjay Gupta" },
+  { email: "lisa.white@hrms.com", role: "Employee", name: "Lisa White" },
+  { email: "arjun.mehta@hrms.com", role: "Employee", name: "Arjun Mehta" },
+  {
+    email: "jennifer.davis@hrms.com",
+    role: "Employee",
+    name: "Jennifer Davis",
+  },
+  { email: "vikram.rao@hrms.com", role: "Employee", name: "Vikram Rao" },
+  { email: "pooja.verma@hrms.com", role: "Employee", name: "Pooja Verma" },
 ];
 
 // ============================================
@@ -94,6 +143,15 @@ export function LoginPage() {
   // Local state
   const [showPassword, setShowPassword] = useState(false);
   const [showDemoCredentials, setShowDemoCredentials] = useState(false);
+
+  // Email autocomplete state
+  const [emailSuggestions, setEmailSuggestions] = useState<typeof KNOWN_EMAILS>(
+    [],
+  );
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
 
   // Get the redirect path from location state (if user was redirected from a protected route)
   const from = (location.state as { from?: string })?.from || "/dashboard";
@@ -128,6 +186,93 @@ export function LoginPage() {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
+
+  // ---- Email autocomplete handler ----
+  const handleEmailChange = useCallback((value: string) => {
+    if (value.length >= 1) {
+      const query = value.toLowerCase();
+      const matches = KNOWN_EMAILS.filter(
+        (item) =>
+          item.email.toLowerCase().includes(query) ||
+          item.name.toLowerCase().includes(query),
+      ).slice(0, 6);
+      setEmailSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+      setSelectedSuggestionIndex(-1);
+    } else {
+      setEmailSuggestions([]);
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }
+  }, []);
+
+  const handleSelectSuggestion = useCallback(
+    (email: string) => {
+      setValue("email", email);
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+      clearErrors("email");
+      dispatch(clearError());
+      // Auto-fill password for known demo accounts
+      const cred = DEMO_CREDENTIALS.find((c) => c.email === email);
+      if (cred) {
+        setValue("password", cred.password);
+        clearErrors("password");
+      }
+      // Focus password field
+      const pwdInput = document.getElementById("password");
+      if (pwdInput) pwdInput.focus();
+    },
+    [setValue, clearErrors, dispatch],
+  );
+
+  const handleEmailKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (!showSuggestions || emailSuggestions.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedSuggestionIndex((prev) =>
+          prev < emailSuggestions.length - 1 ? prev + 1 : 0,
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedSuggestionIndex((prev) =>
+          prev > 0 ? prev - 1 : emailSuggestions.length - 1,
+        );
+      } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
+        e.preventDefault();
+        handleSelectSuggestion(emailSuggestions[selectedSuggestionIndex].email);
+      } else if (e.key === "Escape") {
+        setShowSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+      }
+    },
+    [
+      showSuggestions,
+      emailSuggestions,
+      selectedSuggestionIndex,
+      handleSelectSuggestion,
+    ],
+  );
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+    if (showSuggestions) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showSuggestions]);
 
   // ---- Form Submit Handler ----
   const onSubmit = async (data: LoginFormData) => {
@@ -193,8 +338,8 @@ export function LoginPage() {
 
       {/* ---- Login Form ---- */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
-        {/* ---- Email Field ---- */}
-        <div>
+        {/* ---- Email Field with Autocomplete ---- */}
+        <div ref={suggestionsRef}>
           <label
             htmlFor="email"
             className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-dark-200"
@@ -213,12 +358,20 @@ export function LoginPage() {
               />
             </div>
             <input
-              {...register("email")}
+              {...register("email", {
+                onChange: (e) => handleEmailChange(e.target.value),
+              })}
+              ref={(e) => {
+                register("email").ref(e);
+                emailInputRef.current = e;
+              }}
               type="email"
               id="email"
-              autoComplete="email"
-              placeholder="Enter your email"
+              autoComplete="off"
+              placeholder="Start typing to see suggestions..."
               disabled={isLoading}
+              onFocus={(e) => handleEmailChange(e.target.value)}
+              onKeyDown={handleEmailKeyDown}
               className={cn(
                 "w-full rounded-xl border bg-dark-800/50 py-3 pl-10 pr-4 text-sm text-white placeholder-dark-500 outline-none transition-all",
                 "focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20",
@@ -228,6 +381,89 @@ export function LoginPage() {
                   : "border-gray-300 dark:border-dark-700 hover:border-gray-300 dark:border-dark-600",
               )}
             />
+
+            {/* ---- Email Suggestions Dropdown ---- */}
+            {showSuggestions && emailSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-1.5 overflow-hidden rounded-xl border border-dark-600/80 bg-dark-800 shadow-lg shadow-black/30 animate-fade-in-down backdrop-blur-sm">
+                <div className="px-3 py-2 border-b border-dark-700/50">
+                  <p className="text-2xs font-medium text-dark-400">
+                    Suggestions · {emailSuggestions.length} match
+                    {emailSuggestions.length !== 1 ? "es" : ""}
+                  </p>
+                </div>
+                <div className="max-h-52 overflow-y-auto scrollbar-thin py-1">
+                  {emailSuggestions.map((suggestion, index) => {
+                    const roleColor =
+                      suggestion.role === "Admin"
+                        ? "text-primary-400 bg-primary-500/10"
+                        : suggestion.role === "HR"
+                          ? "text-accent-400 bg-accent-500/10"
+                          : "text-success-400 bg-success-500/10";
+
+                    return (
+                      <button
+                        key={suggestion.email}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(suggestion.email)}
+                        onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                        className={cn(
+                          "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-all duration-150",
+                          index === selectedSuggestionIndex
+                            ? "bg-primary-500/10"
+                            : "hover:bg-dark-700/50",
+                        )}
+                      >
+                        {/* Avatar / initial */}
+                        <div
+                          className={cn(
+                            "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                            roleColor,
+                          )}
+                        >
+                          {suggestion.name.charAt(0)}
+                        </div>
+
+                        {/* Info */}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-dark-100">
+                            {suggestion.name}
+                          </p>
+                          <p className="truncate text-2xs text-dark-400">
+                            {suggestion.email}
+                          </p>
+                        </div>
+
+                        {/* Role badge */}
+                        <span
+                          className={cn(
+                            "flex-shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold",
+                            roleColor,
+                          )}
+                        >
+                          {suggestion.role}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="border-t border-dark-700/50 px-3 py-1.5">
+                  <p className="text-2xs text-dark-500">
+                    <kbd className="rounded border border-dark-600 bg-dark-700 px-1 py-0.5 text-2xs font-mono">
+                      ↑↓
+                    </kbd>{" "}
+                    navigate ·{" "}
+                    <kbd className="rounded border border-dark-600 bg-dark-700 px-1 py-0.5 text-2xs font-mono">
+                      Enter
+                    </kbd>{" "}
+                    select ·{" "}
+                    <kbd className="rounded border border-dark-600 bg-dark-700 px-1 py-0.5 text-2xs font-mono">
+                      Esc
+                    </kbd>{" "}
+                    close
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
           {errors.email && (
             <p className="mt-1.5 flex items-center gap-1 text-xs text-danger-400">
@@ -383,46 +619,51 @@ export function LoginPage() {
             <p className="text-center text-2xs text-gray-400 dark:text-dark-500">
               Click a credential below to auto-fill the login form
             </p>
-            {DEMO_CREDENTIALS.map((cred) => (
-              <button
-                key={cred.role}
-                type="button"
-                onClick={() => handleFillCredentials(cred.email, cred.password)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-lg border px-3.5 py-2.5 text-left transition-all hover:scale-[1.01]",
-                  cred.bg,
-                  cred.border,
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      "inline-flex h-7 w-7 items-center justify-center rounded-full text-2xs font-bold",
-                      cred.bg,
-                      cred.color,
-                    )}
-                  >
-                    {cred.role.charAt(0)}
-                  </span>
-                  <div>
-                    <p className={cn("text-xs font-semibold", cred.color)}>
-                      {cred.role}
-                    </p>
+            {DEMO_CREDENTIALS.map((cred) => {
+              const Icon = cred.icon;
+              return (
+                <button
+                  key={cred.role}
+                  type="button"
+                  onClick={() =>
+                    handleFillCredentials(cred.email, cred.password)
+                  }
+                  className={cn(
+                    "group flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-left transition-all duration-200 hover:scale-[1.01] hover:shadow-md",
+                    cred.bg,
+                    cred.border,
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "inline-flex h-8 w-8 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110",
+                        cred.bg,
+                        cred.color,
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <p className={cn("text-xs font-semibold", cred.color)}>
+                        {cred.role}
+                      </p>
+                      <p className="text-2xs text-gray-400 dark:text-dark-500">
+                        {cred.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
                     <p className="text-2xs text-gray-400 dark:text-dark-500">
-                      {cred.email}
+                      Password
+                    </p>
+                    <p className={cn("text-xs font-mono", cred.color)}>
+                      {cred.password}
                     </p>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xs text-gray-400 dark:text-dark-500">
-                    Password
-                  </p>
-                  <p className={cn("text-xs font-mono", cred.color)}>
-                    {cred.password}
-                  </p>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

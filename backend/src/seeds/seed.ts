@@ -18,7 +18,16 @@
 //   npx tsx src/seeds/seed.ts
 //   npm run seed
 
-import { PrismaClient, Role, EmployeeStatus, Gender, MaritalStatus, LeaveType, LeaveStatus, AttendanceStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  Role,
+  EmployeeStatus,
+  Gender,
+  MaritalStatus,
+  LeaveType,
+  LeaveStatus,
+  AttendanceStatus,
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -70,8 +79,8 @@ const DEPARTMENTS = [
 const EMPLOYEES_DATA = [
   // Admin user
   {
-    firstName: 'Rajesh',
-    lastName: 'Kumar',
+    firstName: 'Abhishek',
+    lastName: 'Mishra',
     email: 'admin@hrms.com',
     password: 'admin123',
     role: 'ADMIN' as Role,
@@ -505,13 +514,13 @@ const EMPLOYEES_DATA = [
 ];
 
 const HOLIDAYS = [
-  { name: 'New Year', date: '2025-01-01', description: 'New Year\'s Day' },
+  { name: 'New Year', date: '2025-01-01', description: "New Year's Day" },
   { name: 'Republic Day', date: '2025-01-26', description: 'Republic Day of India' },
   { name: 'Holi', date: '2025-03-14', description: 'Festival of Colors' },
   { name: 'Good Friday', date: '2025-04-18', description: 'Good Friday' },
-  { name: 'May Day', date: '2025-05-01', description: 'International Workers\' Day' },
+  { name: 'May Day', date: '2025-05-01', description: "International Workers' Day" },
   { name: 'Independence Day', date: '2025-08-15', description: 'India Independence Day' },
-  { name: 'Gandhi Jayanti', date: '2025-10-02', description: 'Mahatma Gandhi\'s Birthday' },
+  { name: 'Gandhi Jayanti', date: '2025-10-02', description: "Mahatma Gandhi's Birthday" },
   { name: 'Dussehra', date: '2025-10-02', description: 'Vijayadashami', isOptional: true },
   { name: 'Diwali', date: '2025-10-20', description: 'Festival of Lights' },
   { name: 'Christmas', date: '2025-12-25', description: 'Christmas Day' },
@@ -520,65 +529,185 @@ const HOLIDAYS = [
 const ANNOUNCEMENTS = [
   {
     title: 'Welcome to the New HRMS Portal!',
-    content: 'We are excited to announce the launch of our new Human Resource Management System. This modern platform will streamline all your HR operations including leave management, attendance tracking, and employee records. Please take a moment to familiarize yourself with the new interface and let us know if you have any questions.',
+    content:
+      'We are excited to announce the launch of our new Human Resource Management System. This modern platform will streamline all your HR operations including leave management, attendance tracking, and employee records. Please take a moment to familiarize yourself with the new interface and let us know if you have any questions.',
     priority: 'high',
   },
   {
     title: 'Company Town Hall Meeting',
-    content: 'The quarterly company town hall meeting is scheduled for this Friday at 3:00 PM. All employees are encouraged to attend. We will be discussing Q3 results, upcoming projects, and team achievements. Light refreshments will be served.',
+    content:
+      'The quarterly company town hall meeting is scheduled for this Friday at 3:00 PM. All employees are encouraged to attend. We will be discussing Q3 results, upcoming projects, and team achievements. Light refreshments will be served.',
     priority: 'normal',
   },
   {
     title: 'Annual Performance Reviews',
-    content: 'Annual performance reviews will begin next month. Managers should schedule one-on-one meetings with their team members to discuss goals, achievements, and areas for improvement. Self-assessment forms have been shared via email.',
+    content:
+      'Annual performance reviews will begin next month. Managers should schedule one-on-one meetings with their team members to discuss goals, achievements, and areas for improvement. Self-assessment forms have been shared via email.',
     priority: 'normal',
   },
   {
     title: 'New Health Insurance Benefits',
-    content: 'We have upgraded our health insurance plan. The new plan includes dental coverage, mental health support, and increased outpatient limits. Details have been shared with your registered email addresses. Please review and update your nominees if needed.',
+    content:
+      'We have upgraded our health insurance plan. The new plan includes dental coverage, mental health support, and increased outpatient limits. Details have been shared with your registered email addresses. Please review and update your nominees if needed.',
     priority: 'high',
   },
   {
     title: 'Office Renovation Notice',
-    content: 'The 3rd floor will undergo renovation starting next Monday. Employees seated on the 3rd floor will be temporarily relocated to the 5th floor. Please ensure you collect all personal belongings before Friday evening.',
+    content:
+      'The 3rd floor will undergo renovation starting next Monday. Employees seated on the 3rd floor will be temporarily relocated to the 5th floor. Please ensure you collect all personal belongings before Friday evening.',
     priority: 'low',
   },
 ];
 
 const SETTINGS = [
   // General settings
-  { key: 'company.name', value: 'HRMSLite', group: 'general', description: 'Company name displayed across the application' },
-  { key: 'company.email', value: 'info@hrms.com', group: 'general', description: 'Company contact email' },
-  { key: 'company.phone', value: '+91-9876543210', group: 'general', description: 'Company contact phone' },
-  { key: 'company.address', value: '123 Tech Park, Electronic City, Bangalore 560100', group: 'general', description: 'Company address' },
-  { key: 'company.website', value: 'https://hrms.example.com', group: 'general', description: 'Company website URL' },
+  {
+    key: 'company.name',
+    value: 'HRMSLite',
+    group: 'general',
+    description: 'Company name displayed across the application',
+  },
+  {
+    key: 'company.email',
+    value: 'info@hrms.com',
+    group: 'general',
+    description: 'Company contact email',
+  },
+  {
+    key: 'company.phone',
+    value: '+91-9876543210',
+    group: 'general',
+    description: 'Company contact phone',
+  },
+  {
+    key: 'company.address',
+    value: '123 Tech Park, Electronic City, Bangalore 560100',
+    group: 'general',
+    description: 'Company address',
+  },
+  {
+    key: 'company.website',
+    value: 'https://hrms.example.com',
+    group: 'general',
+    description: 'Company website URL',
+  },
   { key: 'company.logo', value: '', group: 'general', description: 'URL to company logo' },
 
   // Leave settings
-  { key: 'leave.casual.default', value: '12', group: 'leave', description: 'Default casual leave allocation per year' },
-  { key: 'leave.sick.default', value: '10', group: 'leave', description: 'Default sick leave allocation per year' },
-  { key: 'leave.earned.default', value: '15', group: 'leave', description: 'Default earned leave allocation per year' },
-  { key: 'leave.carryForward.enabled', value: 'true', group: 'leave', description: 'Whether to carry forward unused leaves to next year' },
-  { key: 'leave.carryForward.maxDays', value: '5', group: 'leave', description: 'Maximum number of carry-forward days' },
-  { key: 'leave.approval.required', value: 'true', group: 'leave', description: 'Whether leave requests require approval' },
+  {
+    key: 'leave.casual.default',
+    value: '12',
+    group: 'leave',
+    description: 'Default casual leave allocation per year',
+  },
+  {
+    key: 'leave.sick.default',
+    value: '10',
+    group: 'leave',
+    description: 'Default sick leave allocation per year',
+  },
+  {
+    key: 'leave.earned.default',
+    value: '15',
+    group: 'leave',
+    description: 'Default earned leave allocation per year',
+  },
+  {
+    key: 'leave.carryForward.enabled',
+    value: 'true',
+    group: 'leave',
+    description: 'Whether to carry forward unused leaves to next year',
+  },
+  {
+    key: 'leave.carryForward.maxDays',
+    value: '5',
+    group: 'leave',
+    description: 'Maximum number of carry-forward days',
+  },
+  {
+    key: 'leave.approval.required',
+    value: 'true',
+    group: 'leave',
+    description: 'Whether leave requests require approval',
+  },
 
   // Attendance settings
-  { key: 'attendance.clockIn.start', value: '08:00', group: 'attendance', description: 'Earliest allowed clock-in time' },
-  { key: 'attendance.clockIn.lateThreshold', value: '09:30', group: 'attendance', description: 'Clock-in after this time is marked as LATE' },
-  { key: 'attendance.workHours.standard', value: '8', group: 'attendance', description: 'Standard working hours per day' },
-  { key: 'attendance.workDays', value: 'MON,TUE,WED,THU,FRI', group: 'attendance', description: 'Working days of the week' },
-  { key: 'attendance.halfDay.threshold', value: '4', group: 'attendance', description: 'Minimum hours for half-day attendance' },
+  {
+    key: 'attendance.clockIn.start',
+    value: '08:00',
+    group: 'attendance',
+    description: 'Earliest allowed clock-in time',
+  },
+  {
+    key: 'attendance.clockIn.lateThreshold',
+    value: '09:30',
+    group: 'attendance',
+    description: 'Clock-in after this time is marked as LATE',
+  },
+  {
+    key: 'attendance.workHours.standard',
+    value: '8',
+    group: 'attendance',
+    description: 'Standard working hours per day',
+  },
+  {
+    key: 'attendance.workDays',
+    value: 'MON,TUE,WED,THU,FRI',
+    group: 'attendance',
+    description: 'Working days of the week',
+  },
+  {
+    key: 'attendance.halfDay.threshold',
+    value: '4',
+    group: 'attendance',
+    description: 'Minimum hours for half-day attendance',
+  },
 
   // Email settings
-  { key: 'email.enabled', value: 'false', group: 'email', description: 'Whether email notifications are enabled' },
-  { key: 'email.leaveApproval', value: 'true', group: 'email', description: 'Send email on leave approval/rejection' },
-  { key: 'email.welcomeNew', value: 'true', group: 'email', description: 'Send welcome email to new employees' },
+  {
+    key: 'email.enabled',
+    value: 'false',
+    group: 'email',
+    description: 'Whether email notifications are enabled',
+  },
+  {
+    key: 'email.leaveApproval',
+    value: 'true',
+    group: 'email',
+    description: 'Send email on leave approval/rejection',
+  },
+  {
+    key: 'email.welcomeNew',
+    value: 'true',
+    group: 'email',
+    description: 'Send welcome email to new employees',
+  },
 
   // UI settings
-  { key: 'ui.theme.default', value: 'dark', group: 'ui', description: 'Default UI theme (light/dark)' },
-  { key: 'ui.pagination.defaultSize', value: '10', group: 'ui', description: 'Default page size for list views' },
-  { key: 'ui.dateFormat', value: 'DD/MM/YYYY', group: 'ui', description: 'Date display format across the application' },
-  { key: 'ui.currency', value: 'INR', group: 'ui', description: 'Currency symbol for salary display' },
+  {
+    key: 'ui.theme.default',
+    value: 'dark',
+    group: 'ui',
+    description: 'Default UI theme (light/dark)',
+  },
+  {
+    key: 'ui.pagination.defaultSize',
+    value: '10',
+    group: 'ui',
+    description: 'Default page size for list views',
+  },
+  {
+    key: 'ui.dateFormat',
+    value: 'DD/MM/YYYY',
+    group: 'ui',
+    description: 'Date display format across the application',
+  },
+  {
+    key: 'ui.currency',
+    value: 'INR',
+    group: 'ui',
+    description: 'Currency symbol for salary display',
+  },
 ];
 
 // ============================================
@@ -645,10 +774,7 @@ async function main() {
       new Date(currentYear - 3, 0, 1),
       new Date(currentYear, new Date().getMonth(), new Date().getDate()),
     );
-    const dateOfBirth = randomDate(
-      new Date(1980, 0, 1),
-      new Date(2000, 11, 31),
-    );
+    const dateOfBirth = randomDate(new Date(1980, 0, 1), new Date(2000, 11, 31));
 
     const status = (emp as any).status || 'ACTIVE';
 
@@ -689,7 +815,13 @@ async function main() {
         emergencyContactName: `${randomElement(['Parent', 'Spouse', 'Sibling'])} of ${emp.firstName}`,
         emergencyContactPhone: `+91${randomInt(7000000000, 9999999999)}`,
         emergencyContactRelation: randomElement(['Parent', 'Spouse', 'Sibling', 'Friend']),
-        bankName: randomElement(['State Bank of India', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Punjab National Bank']),
+        bankName: randomElement([
+          'State Bank of India',
+          'HDFC Bank',
+          'ICICI Bank',
+          'Axis Bank',
+          'Punjab National Bank',
+        ]),
         bankAccountNo: `${randomInt(1000000000, 9999999999)}${randomInt(10, 99)}`,
         bankIfscCode: `${randomElement(['SBIN', 'HDFC', 'ICIC', 'UTIB', 'PUNB'])}0${randomInt(100000, 999999)}`,
       },
@@ -731,7 +863,9 @@ async function main() {
       }
     }
 
-    console.info(`   ✅ ${emp.firstName} ${emp.lastName} (${employeeNumber}) — ${emp.role} — ${emp.designation}`);
+    console.info(
+      `   ✅ ${emp.firstName} ${emp.lastName} (${employeeNumber}) — ${emp.role} — ${emp.designation}`,
+    );
   }
   console.info('');
 
@@ -795,7 +929,11 @@ async function main() {
       let clockOut: Date | null = null;
       let totalHours: number | null = null;
 
-      const dateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+      const dateOnly = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth(),
+        currentDate.getDate(),
+      );
 
       if (status === 'PRESENT' || status === 'LATE' || status === 'HALF_DAY') {
         const clockInHour = status === 'LATE' ? randomInt(10, 11) : randomInt(8, 9);
@@ -808,7 +946,8 @@ async function main() {
         clockOut = new Date(dateOnly);
         clockOut.setHours(clockOutHour, clockOutMinute, 0, 0);
 
-        totalHours = Math.round(((clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60)) * 100) / 100;
+        totalHours =
+          Math.round(((clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60)) * 100) / 100;
       }
 
       try {
@@ -820,7 +959,8 @@ async function main() {
             clockOut,
             totalHours,
             status,
-            notes: status === 'ABSENT' ? 'Unplanned absence' : status === 'LATE' ? 'Late arrival' : null,
+            notes:
+              status === 'ABSENT' ? 'Unplanned absence' : status === 'LATE' ? 'Late arrival' : null,
           },
         });
         attendanceCount++;
@@ -849,7 +989,7 @@ async function main() {
     'Planning a short vacation with family.',
     'Wedding ceremony in the family to attend.',
     'Home renovation work requires supervision.',
-    'Parent-teacher meeting at child\'s school.',
+    "Parent-teacher meeting at child's school.",
     'Feeling unwell with fever and cold symptoms.',
     'Need to take care of a sick family member.',
     'Religious festival celebrations with family.',
@@ -870,7 +1010,11 @@ async function main() {
 
       const startDate = new Date(now);
       startDate.setDate(startDate.getDate() - startOffset);
-      const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      const startDateOnly = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+      );
 
       const endDate = new Date(startDateOnly);
       endDate.setDate(endDate.getDate() + duration - 1);
@@ -885,11 +1029,12 @@ async function main() {
             totalDays: duration,
             reason: randomElement(leaveReasons),
             status,
-            remarks: status === 'APPROVED'
-              ? 'Approved. Enjoy your time off.'
-              : status === 'REJECTED'
-              ? 'Cannot approve due to team resource constraints.'
-              : null,
+            remarks:
+              status === 'APPROVED'
+                ? 'Approved. Enjoy your time off.'
+                : status === 'REJECTED'
+                  ? 'Cannot approve due to team resource constraints.'
+                  : null,
             approvedBy: status !== 'PENDING' ? employeeIds[1] : null, // HR approves
             approvedOn: status !== 'PENDING' ? randomDate(startDateOnly, new Date()) : null,
           },
@@ -908,7 +1053,12 @@ async function main() {
   // ------------------------------------------
   console.info('⭐ Creating performance reviews...');
 
-  const reviewPeriods = [`Q1 ${currentYear}`, `Q2 ${currentYear}`, `H1 ${currentYear}`, `${currentYear - 1}`];
+  const reviewPeriods = [
+    `Q1 ${currentYear}`,
+    `Q2 ${currentYear}`,
+    `H1 ${currentYear}`,
+    `${currentYear - 1}`,
+  ];
   const strengthsList = [
     'Excellent problem-solving skills. Consistently delivers high-quality code.',
     'Strong communication skills and team collaboration.',

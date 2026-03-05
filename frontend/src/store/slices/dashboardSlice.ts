@@ -6,9 +6,9 @@
 // attendance summary, and recent activity.
 // Uses createAsyncThunk for API calls.
 
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '../store';
-import { dashboardApi } from '@/api/dashboard';
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import type { RootState } from "../store";
+import { dashboardApi } from "@/api/dashboard";
 import type {
   FullDashboardData,
   DashboardStats,
@@ -19,7 +19,7 @@ import type {
   MonthlyAttendanceData,
   LeaveDistribution,
   RecentActivity,
-} from '@/api/dashboard';
+} from "@/api/dashboard";
 
 // ============================================
 // Types
@@ -84,7 +84,7 @@ const initialState: DashboardState = {
   error: null,
   statsError: null,
 
-  period: 'all',
+  period: "all",
   departmentId: null,
 
   lastFetched: null,
@@ -110,7 +110,7 @@ export const fetchFullDashboard = createAsyncThunk<
   { period?: string; departmentId?: string; force?: boolean } | undefined,
   { rejectValue: string; state: RootState }
 >(
-  'dashboard/fetchFullDashboard',
+  "dashboard/fetchFullDashboard",
   async (params, { rejectWithValue }) => {
     try {
       const response = await dashboardApi.getFullDashboard({
@@ -122,7 +122,7 @@ export const fetchFullDashboard = createAsyncThunk<
       const message =
         error.response?.data?.message ||
         error.message ||
-        'Failed to load dashboard data';
+        "Failed to load dashboard data";
       return rejectWithValue(message);
     }
   },
@@ -149,21 +149,18 @@ export const fetchDashboardStats = createAsyncThunk<
   DashboardStats,
   void,
   { rejectValue: string }
->(
-  'dashboard/fetchStats',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await dashboardApi.getStats();
-      return response.data.data;
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load dashboard statistics';
-      return rejectWithValue(message);
-    }
-  },
-);
+>("dashboard/fetchStats", async (_, { rejectWithValue }) => {
+  try {
+    const response = await dashboardApi.getStats();
+    return response.data.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load dashboard statistics";
+    return rejectWithValue(message);
+  }
+});
 
 /**
  * Fetch department breakdown data for the donut chart.
@@ -172,21 +169,18 @@ export const fetchDepartmentBreakdown = createAsyncThunk<
   DepartmentBreakdown[],
   void,
   { rejectValue: string }
->(
-  'dashboard/fetchDepartmentBreakdown',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await dashboardApi.getDepartmentBreakdown();
-      return response.data.data;
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load department breakdown';
-      return rejectWithValue(message);
-    }
-  },
-);
+>("dashboard/fetchDepartmentBreakdown", async (_, { rejectWithValue }) => {
+  try {
+    const response = await dashboardApi.getDepartmentBreakdown();
+    return response.data.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load department breakdown";
+    return rejectWithValue(message);
+  }
+});
 
 /**
  * Fetch attendance summary for a specific month/year.
@@ -195,21 +189,18 @@ export const fetchAttendanceSummary = createAsyncThunk<
   AttendanceSummary,
   { year?: number; month?: number } | undefined,
   { rejectValue: string }
->(
-  'dashboard/fetchAttendanceSummary',
-  async (params, { rejectWithValue }) => {
-    try {
-      const response = await dashboardApi.getAttendanceSummary(params);
-      return response.data.data;
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load attendance summary';
-      return rejectWithValue(message);
-    }
-  },
-);
+>("dashboard/fetchAttendanceSummary", async (params, { rejectWithValue }) => {
+  try {
+    const response = await dashboardApi.getAttendanceSummary(params);
+    return response.data.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load attendance summary";
+    return rejectWithValue(message);
+  }
+});
 
 /**
  * Fetch top performers list for the dashboard widget.
@@ -218,21 +209,18 @@ export const fetchTopPerformers = createAsyncThunk<
   TopPerformer[],
   number | undefined,
   { rejectValue: string }
->(
-  'dashboard/fetchTopPerformers',
-  async (limit = 5, { rejectWithValue }) => {
-    try {
-      const response = await dashboardApi.getTopPerformers(limit);
-      return response.data.data;
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load top performers';
-      return rejectWithValue(message);
-    }
-  },
-);
+>("dashboard/fetchTopPerformers", async (limit = 5, { rejectWithValue }) => {
+  try {
+    const response = await dashboardApi.getTopPerformers(limit);
+    return response.data.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load top performers";
+    return rejectWithValue(message);
+  }
+});
 
 /**
  * Fetch top absentees list for the dashboard widget.
@@ -241,21 +229,18 @@ export const fetchTopAbsentees = createAsyncThunk<
   TopAbsentee[],
   { limit?: number; year?: number; month?: number } | undefined,
   { rejectValue: string }
->(
-  'dashboard/fetchTopAbsentees',
-  async (params, { rejectWithValue }) => {
-    try {
-      const response = await dashboardApi.getTopAbsentees(params);
-      return response.data.data;
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load top absentees';
-      return rejectWithValue(message);
-    }
-  },
-);
+>("dashboard/fetchTopAbsentees", async (params, { rejectWithValue }) => {
+  try {
+    const response = await dashboardApi.getTopAbsentees(params);
+    return response.data.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load top absentees";
+    return rejectWithValue(message);
+  }
+});
 
 /**
  * Fetch monthly attendance chart data.
@@ -265,7 +250,7 @@ export const fetchMonthlyAttendanceChart = createAsyncThunk<
   number | undefined,
   { rejectValue: string }
 >(
-  'dashboard/fetchMonthlyAttendanceChart',
+  "dashboard/fetchMonthlyAttendanceChart",
   async (months = 6, { rejectWithValue }) => {
     try {
       const response = await dashboardApi.getMonthlyAttendanceChart(months);
@@ -274,7 +259,7 @@ export const fetchMonthlyAttendanceChart = createAsyncThunk<
       const message =
         error.response?.data?.message ||
         error.message ||
-        'Failed to load monthly attendance chart';
+        "Failed to load monthly attendance chart";
       return rejectWithValue(message);
     }
   },
@@ -287,21 +272,18 @@ export const fetchLeaveDistribution = createAsyncThunk<
   LeaveDistribution[],
   void,
   { rejectValue: string }
->(
-  'dashboard/fetchLeaveDistribution',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await dashboardApi.getLeaveDistribution();
-      return response.data.data;
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load leave distribution';
-      return rejectWithValue(message);
-    }
-  },
-);
+>("dashboard/fetchLeaveDistribution", async (_, { rejectWithValue }) => {
+  try {
+    const response = await dashboardApi.getLeaveDistribution();
+    return response.data.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load leave distribution";
+    return rejectWithValue(message);
+  }
+});
 
 /**
  * Fetch recent activity feed.
@@ -310,28 +292,25 @@ export const fetchRecentActivity = createAsyncThunk<
   RecentActivity[],
   number | undefined,
   { rejectValue: string }
->(
-  'dashboard/fetchRecentActivity',
-  async (limit = 10, { rejectWithValue }) => {
-    try {
-      const response = await dashboardApi.getRecentActivity(limit);
-      return response.data.data;
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load recent activity';
-      return rejectWithValue(message);
-    }
-  },
-);
+>("dashboard/fetchRecentActivity", async (limit = 10, { rejectWithValue }) => {
+  try {
+    const response = await dashboardApi.getRecentActivity(limit);
+    return response.data.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load recent activity";
+    return rejectWithValue(message);
+  }
+});
 
 // ============================================
 // Dashboard Slice
 // ============================================
 
 const dashboardSlice = createSlice({
-  name: 'dashboard',
+  name: "dashboard",
   initialState,
   reducers: {
     /**
@@ -385,20 +364,65 @@ const dashboardSlice = createSlice({
           state.error = null;
           state.lastFetched = Date.now();
 
+          const payload = action.payload;
+
           // Populate all sections from the full dashboard response
-          state.stats = action.payload.stats;
-          state.departmentBreakdown = action.payload.departmentBreakdown || [];
-          state.attendanceSummary = action.payload.attendanceSummary || null;
-          state.topPerformers = action.payload.topPerformers || [];
-          state.topAbsentees = action.payload.topAbsentees || [];
-          state.monthlyAttendance = action.payload.monthlyAttendance || [];
-          state.leaveDistribution = action.payload.leaveDistribution || [];
-          state.recentActivity = action.payload.recentActivity || [];
+          state.stats = payload.stats;
+          state.departmentBreakdown = payload.departmentBreakdown || [];
+          state.attendanceSummary = payload.attendanceSummary || null;
+          state.recentActivity = payload.recentActivity || [];
+
+          // Normalize top performers — backend returns employeeName (single string)
+          // but frontend expects firstName + lastName. Handle both formats.
+          state.topPerformers = (payload.topPerformers || []).map((p: any) => {
+            if (p.firstName && p.lastName) return p;
+            const nameParts = (p.employeeName || "").split(" ");
+            const firstName = nameParts[0] || "Unknown";
+            const lastName = nameParts.slice(1).join(" ") || "";
+            const dept =
+              typeof p.department === "string"
+                ? { id: "", name: p.department }
+                : p.department || null;
+            return {
+              ...p,
+              id: p.id || p.employeeId || "",
+              firstName,
+              lastName,
+              department: dept,
+            };
+          });
+
+          // Normalize top absentees — same pattern
+          state.topAbsentees = (payload.topAbsentees || []).map((a: any) => {
+            if (a.firstName && a.lastName) return a;
+            const nameParts = (a.employeeName || "").split(" ");
+            const firstName = nameParts[0] || "Unknown";
+            const lastName = nameParts.slice(1).join(" ") || "";
+            const dept =
+              typeof a.department === "string"
+                ? { id: "", name: a.department }
+                : a.department || null;
+            return {
+              ...a,
+              id: a.id || a.employeeId || "",
+              firstName,
+              lastName,
+              department: dept,
+            };
+          });
+
+          // Handle both flat and nested charts format from backend
+          // Backend returns: { charts: { monthlyAttendance, leaveDistribution } }
+          const charts = (payload as any).charts;
+          state.monthlyAttendance =
+            payload.monthlyAttendance || charts?.monthlyAttendance || [];
+          state.leaveDistribution =
+            payload.leaveDistribution || charts?.leaveDistribution || [];
         },
       )
       .addCase(fetchFullDashboard.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload || 'Failed to load dashboard';
+        state.error = action.payload || "Failed to load dashboard";
       });
 
     // ---- Stats Only ----
@@ -417,7 +441,7 @@ const dashboardSlice = createSlice({
       )
       .addCase(fetchDashboardStats.rejected, (state, action) => {
         state.isStatsLoading = false;
-        state.statsError = action.payload || 'Failed to load stats';
+        state.statsError = action.payload || "Failed to load stats";
       });
 
     // ---- Department Breakdown ----
@@ -568,8 +592,7 @@ export const selectRecentActivity = (state: RootState) =>
   state.dashboard.recentActivity;
 export const selectDashboardLoading = (state: RootState) =>
   state.dashboard.isLoading;
-export const selectDashboardError = (state: RootState) =>
-  state.dashboard.error;
+export const selectDashboardError = (state: RootState) => state.dashboard.error;
 export const selectDashboardPeriod = (state: RootState) =>
   state.dashboard.period;
 export const selectDashboardDepartmentFilter = (state: RootState) =>

@@ -658,10 +658,18 @@ function ActionDropdown({
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="rounded-md p-1.5 text-gray-400 dark:text-dark-500 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-600 dark:hover:text-dark-300"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className={cn(
+          "rounded-lg p-1.5 transition-all duration-200",
+          isOpen
+            ? "bg-primary-500/10 text-primary-500 dark:text-primary-400"
+            : "text-gray-400 dark:text-dark-500 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-600 dark:hover:text-dark-300",
+        )}
       >
-        <HiOutlineEllipsisVertical className="h-4 w-4" />
+        <HiOutlineEllipsisVertical className="h-4.5 w-4.5" />
       </button>
 
       {isOpen && (
@@ -669,44 +677,57 @@ function ActionDropdown({
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsOpen(false);
+            }}
           />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-800 py-1 shadow-dropdown-dark animate-scale-in">
+          <div className="absolute right-0 top-full z-20 mt-1.5 w-44 overflow-hidden rounded-xl border border-gray-200/80 bg-white dark:border-dark-600/80 dark:bg-dark-800 py-1.5 shadow-lg shadow-black/10 dark:shadow-black/30 animate-scale-in backdrop-blur-sm">
+            {/* Header label */}
+            <div className="px-3 pb-1.5 pt-0.5">
+              <p className="text-2xs font-semibold uppercase tracking-wider text-gray-400 dark:text-dark-500">
+                Actions
+              </p>
+            </div>
+
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setIsOpen(false);
                 onView();
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-dark-300 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-dark-700 dark:hover:text-white"
+              className="group flex w-full items-center gap-2.5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-dark-200 transition-all duration-150 hover:bg-primary-50 hover:text-primary-700 dark:hover:bg-primary-500/10 dark:hover:text-primary-400"
             >
-              <HiOutlineEye className="h-4 w-4" />
+              <HiOutlineEye className="h-4 w-4 text-gray-400 dark:text-dark-400 transition-colors group-hover:text-primary-500 dark:group-hover:text-primary-400" />
               View Details
             </button>
             {canEdit && (
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setIsOpen(false);
                   onEdit();
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-dark-300 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-dark-700 dark:hover:text-white"
+                className="group flex w-full items-center gap-2.5 px-3 py-2 text-sm font-medium text-gray-700 dark:text-dark-200 transition-all duration-150 hover:bg-accent-50 hover:text-accent-700 dark:hover:bg-accent-500/10 dark:hover:text-accent-400"
               >
-                <HiOutlinePencilSquare className="h-4 w-4" />
-                Edit
+                <HiOutlinePencilSquare className="h-4 w-4 text-gray-400 dark:text-dark-400 transition-colors group-hover:text-accent-500 dark:group-hover:text-accent-400" />
+                Edit Employee
               </button>
             )}
             {canDelete && (
               <>
-                <div className="mx-2 my-1 h-px bg-gray-200 dark:bg-dark-700" />
+                <div className="mx-3 my-1.5 h-px bg-gray-100 dark:bg-dark-700" />
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setIsOpen(false);
                     onDelete();
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger-400 transition-colors hover:bg-danger-500/10"
+                  className="group flex w-full items-center gap-2.5 px-3 py-2 text-sm font-medium text-danger-500 dark:text-danger-400 transition-all duration-150 hover:bg-danger-50 dark:hover:bg-danger-500/10"
                 >
-                  <HiOutlineTrash className="h-4 w-4" />
+                  <HiOutlineTrash className="h-4 w-4 transition-colors" />
                   Delete
                 </button>
               </>

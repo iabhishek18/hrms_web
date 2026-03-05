@@ -5,7 +5,7 @@
 // endpoints. Used by the dashboard Redux slice and
 // the Dashboard page to fetch stats, charts, and widgets.
 
-import { api } from './client';
+import { api } from "./client";
 
 // ============================================
 // Types
@@ -53,14 +53,18 @@ export interface AttendanceSummary {
 export interface TopPerformer {
   id: string;
   employeeId: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  employeeName?: string;
   designation: string;
   avatar: string | null;
-  department: {
-    id: string;
-    name: string;
-  } | null;
+  department:
+    | {
+        id: string;
+        name: string;
+      }
+    | string
+    | null;
   rating: number;
   reviewPeriod: string;
 }
@@ -68,17 +72,22 @@ export interface TopPerformer {
 export interface TopAbsentee {
   id: string;
   employeeId: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
+  employeeName?: string;
   designation: string;
   avatar: string | null;
-  department: {
-    id: string;
-    name: string;
-  } | null;
+  department:
+    | {
+        id: string;
+        name: string;
+      }
+    | string
+    | null;
   absentDays: number;
   totalDays: number;
   absentRate?: number;
+  absentPercentage?: number;
 }
 
 export interface MonthlyAttendanceData {
@@ -116,9 +125,15 @@ export interface FullDashboardData {
   attendanceSummary: AttendanceSummary;
   topPerformers: TopPerformer[];
   topAbsentees: TopAbsentee[];
-  monthlyAttendance: MonthlyAttendanceData[];
-  leaveDistribution: LeaveDistribution[];
+  // Backend may return these at top level OR nested inside a `charts` key
+  monthlyAttendance?: MonthlyAttendanceData[];
+  leaveDistribution?: LeaveDistribution[];
   recentActivity: RecentActivity[];
+  // Nested charts format from backend
+  charts?: {
+    monthlyAttendance?: MonthlyAttendanceData[];
+    leaveDistribution?: LeaveDistribution[];
+  };
 }
 
 // ============================================
@@ -132,15 +147,14 @@ export const dashboardApi = {
    * This is the primary endpoint used by the frontend dashboard page.
    */
   getFullDashboard: (params?: { period?: string; departmentId?: string }) =>
-    api.get<FullDashboardData>('/dashboard', params as Record<string, unknown>),
+    api.get<FullDashboardData>("/dashboard", params as Record<string, unknown>),
 
   /**
    * GET /api/dashboard/stats
    * Returns summary statistics (employee counts, attendance rate, etc.)
    * Accessible by all authenticated users (employees get limited data).
    */
-  getStats: () =>
-    api.get<DashboardStats>('/dashboard/stats'),
+  getStats: () => api.get<DashboardStats>("/dashboard/stats"),
 
   /**
    * GET /api/dashboard/department-breakdown
@@ -148,7 +162,7 @@ export const dashboardApi = {
    * Formatted for pie/donut chart rendering.
    */
   getDepartmentBreakdown: () =>
-    api.get<DepartmentBreakdown[]>('/dashboard/department-breakdown'),
+    api.get<DepartmentBreakdown[]>("/dashboard/department-breakdown"),
 
   /**
    * GET /api/dashboard/attendance-summary
@@ -156,7 +170,10 @@ export const dashboardApi = {
    * Query: ?year=2024&month=6
    */
   getAttendanceSummary: (params?: { year?: number; month?: number }) =>
-    api.get<AttendanceSummary>('/dashboard/attendance-summary', params as Record<string, unknown>),
+    api.get<AttendanceSummary>(
+      "/dashboard/attendance-summary",
+      params as Record<string, unknown>,
+    ),
 
   /**
    * GET /api/dashboard/top-performers
@@ -164,15 +181,22 @@ export const dashboardApi = {
    * Query: ?limit=5
    */
   getTopPerformers: (limit: number = 5) =>
-    api.get<TopPerformer[]>('/dashboard/top-performers', { limit }),
+    api.get<TopPerformer[]>("/dashboard/top-performers", { limit }),
 
   /**
    * GET /api/dashboard/top-absentees
    * Returns employees with the most absent days this month.
    * Query: ?limit=5&year=2024&month=6
    */
-  getTopAbsentees: (params?: { limit?: number; year?: number; month?: number }) =>
-    api.get<TopAbsentee[]>('/dashboard/top-absentees', params as Record<string, unknown>),
+  getTopAbsentees: (params?: {
+    limit?: number;
+    year?: number;
+    month?: number;
+  }) =>
+    api.get<TopAbsentee[]>(
+      "/dashboard/top-absentees",
+      params as Record<string, unknown>,
+    ),
 
   /**
    * GET /api/dashboard/charts/monthly-attendance
@@ -180,14 +204,16 @@ export const dashboardApi = {
    * Query: ?months=6
    */
   getMonthlyAttendanceChart: (months: number = 6) =>
-    api.get<MonthlyAttendanceData[]>('/dashboard/charts/monthly-attendance', { months }),
+    api.get<MonthlyAttendanceData[]>("/dashboard/charts/monthly-attendance", {
+      months,
+    }),
 
   /**
    * GET /api/dashboard/charts/leave-distribution
    * Returns leave type distribution for pie/donut charts.
    */
   getLeaveDistribution: () =>
-    api.get<LeaveDistribution[]>('/dashboard/charts/leave-distribution'),
+    api.get<LeaveDistribution[]>("/dashboard/charts/leave-distribution"),
 
   /**
    * GET /api/dashboard/recent-activity
@@ -195,7 +221,7 @@ export const dashboardApi = {
    * Query: ?limit=10
    */
   getRecentActivity: (limit: number = 10) =>
-    api.get<RecentActivity[]>('/dashboard/recent-activity', { limit }),
+    api.get<RecentActivity[]>("/dashboard/recent-activity", { limit }),
 };
 
 export default dashboardApi;

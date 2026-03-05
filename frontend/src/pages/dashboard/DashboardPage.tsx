@@ -1504,7 +1504,10 @@ export function DashboardPage() {
             ) : topPerformers.length > 0 ? (
               <div className="space-y-1">
                 {topPerformers.map((performer, index) => {
-                  const fullName = `${performer.firstName} ${performer.lastName}`;
+                  const fullName =
+                    performer.firstName && performer.lastName
+                      ? `${performer.firstName} ${performer.lastName}`
+                      : (performer as any).employeeName || "Unknown Employee";
                   return (
                     <button
                       key={performer.id}
@@ -1549,7 +1552,7 @@ export function DashboardPage() {
                         <p className="truncate text-2xs text-gray-400 dark:text-dark-500">
                           {performer.designation}
                           {performer.department
-                            ? ` · ${performer.department.name}`
+                            ? ` · ${typeof performer.department === "string" ? performer.department : performer.department.name}`
                             : ""}
                         </p>
                       </div>
@@ -1596,7 +1599,10 @@ export function DashboardPage() {
             ) : topAbsentees.length > 0 ? (
               <div className="space-y-1">
                 {topAbsentees.map((absentee, index) => {
-                  const fullName = `${absentee.firstName} ${absentee.lastName}`;
+                  const fullName =
+                    absentee.firstName && absentee.lastName
+                      ? `${absentee.firstName} ${absentee.lastName}`
+                      : (absentee as any).employeeName || "Unknown Employee";
                   const absentRate =
                     absentee.totalDays > 0
                       ? Math.round(
@@ -1637,7 +1643,7 @@ export function DashboardPage() {
                         <p className="truncate text-2xs text-gray-400 dark:text-dark-500">
                           {absentee.designation}
                           {absentee.department
-                            ? ` · ${absentee.department.name}`
+                            ? ` · ${typeof absentee.department === "string" ? absentee.department : absentee.department.name}`
                             : ""}
                         </p>
                       </div>
