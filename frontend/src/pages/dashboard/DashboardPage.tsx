@@ -203,11 +203,25 @@ function StatCard({
   return (
     <div
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       style={{ animationDelay: `${delay}ms` }}
       className={cn(
-        "group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-5 shadow-card transition-all duration-300 hover:border-gray-300 hover:shadow-card-hover dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none dark:hover:border-dark-600/50 dark:hover:shadow-card-dark-hover",
-        "animate-fade-in-up",
-        onClick && "cursor-pointer hover:-translate-y-0.5",
+        "group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition-all duration-300 hover:border-gray-300 hover:shadow-card-hover dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none dark:hover:border-dark-600/50 dark:hover:shadow-card-dark-hover",
+        "animate-fade-in-up touch-feedback",
+        "p-3.5 sm:p-4 md:p-5",
+        onClick &&
+          "cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-ring",
       )}
     >
       {/* Background glow effect on hover */}
@@ -221,58 +235,66 @@ function StatCard({
       {/* Subtle gradient overlay */}
       <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-transparent via-transparent to-gray-50/50 dark:to-dark-700/10" />
 
-      <div className="relative flex items-start justify-between">
+      <div className="relative flex items-start justify-between gap-3">
         {/* Content */}
-        <div className="flex-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400">
+        <div className="flex-1 min-w-0">
+          <p className="text-2xs sm:text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-dark-400 truncate">
             {title}
           </p>
-          <p className="mt-2 text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
+          <p className="mt-1.5 sm:mt-2 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tabular-nums">
             {typeof value === "number" ? value.toLocaleString() : value}
           </p>
           {subtitle && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-dark-400">
+            <p className="mt-0.5 sm:mt-1 text-2xs sm:text-xs text-gray-500 dark:text-dark-400 truncate">
               {subtitle}
             </p>
           )}
 
           {/* Trend indicator */}
           {trend && (
-            <div className="mt-2 flex items-center gap-1.5">
+            <div className="mt-1.5 sm:mt-2 flex items-center gap-1 sm:gap-1.5 flex-wrap">
               {trend.isPositive ? (
                 <div className="flex items-center gap-0.5 text-success-600 dark:text-success-400">
-                  <HiOutlineArrowTrendingUp className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">+{trend.value}%</span>
+                  <HiOutlineArrowTrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <span className="text-2xs sm:text-xs font-medium">
+                    +{trend.value}%
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center gap-0.5 text-danger-600 dark:text-danger-400">
-                  <HiOutlineArrowTrendingDown className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">
+                  <HiOutlineArrowTrendingDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <span className="text-2xs sm:text-xs font-medium">
                     -{Math.abs(trend.value)}%
                   </span>
                 </div>
               )}
-              <span className="text-2xs text-gray-400 dark:text-dark-500">
+              <span className="text-2xs text-gray-400 dark:text-dark-500 hidden xs:inline">
                 {trend.label}
               </span>
             </div>
           )}
         </div>
 
-        {/* Icon */}
+        {/* Icon — responsive sizing */}
         <div
           className={cn(
-            "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110",
+            "flex flex-shrink-0 items-center justify-center rounded-lg sm:rounded-xl transition-transform duration-300 group-hover:scale-110",
+            "h-9 w-9 sm:h-10 sm:w-10 md:h-11 md:w-11",
             iconBg,
           )}
         >
-          <Icon className={cn("h-5.5 w-5.5", iconColor)} />
+          <Icon
+            className={cn(
+              "h-4.5 w-4.5 sm:h-5 sm:w-5 md:h-5.5 md:w-5.5",
+              iconColor,
+            )}
+          />
         </div>
       </div>
 
-      {/* Click hint */}
+      {/* Click hint — desktop only */}
       {onClick && (
-        <div className="absolute bottom-2 right-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+        <div className="absolute bottom-2 right-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 hidden sm:block">
           <HiOutlineChevronRight className="h-4 w-4 text-gray-400 dark:text-dark-500" />
         </div>
       )}
@@ -303,31 +325,33 @@ function CardWrapper({
   loading,
   delay = 0,
 }: CardWrapperProps) {
+  const animationDelay = `${delay}ms`;
+
   return (
     <div
-      style={{ animationDelay: `${delay}ms` }}
       className={cn(
-        "animate-fade-in-up rounded-xl border border-gray-200 bg-white shadow-card transition-all duration-300 hover:shadow-card-hover dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none dark:hover:shadow-card-dark-hover",
+        "rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none animate-fade-in-up overflow-hidden",
         className,
       )}
+      style={{ animationDelay }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-dark-700/30">
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+      {/* Header — responsive padding */}
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-dark-700/50 px-3.5 py-3 sm:px-4 sm:py-3.5 md:px-5 md:py-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
             {title}
           </h3>
           {subtitle && (
-            <p className="mt-0.5 text-2xs text-gray-500 dark:text-dark-400">
+            <p className="mt-0.5 text-2xs sm:text-xs text-gray-500 dark:text-dark-400 truncate">
               {subtitle}
             </p>
           )}
         </div>
-        {action && <div>{action}</div>}
+        {action && <div className="flex-shrink-0 ml-2">{action}</div>}
       </div>
 
-      {/* Content */}
-      <div className="p-5">{children}</div>
+      {/* Body — responsive padding */}
+      <div className="p-3.5 sm:p-4 md:p-5">{children}</div>
     </div>
   );
 }
@@ -807,43 +831,45 @@ function QuickActionButton({
   label,
   description,
   onClick,
-  color,
-  isDark,
+  color = "bg-primary-600",
+  isDark = false,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   description: string;
   onClick: () => void;
-  color: string;
-  isDark: boolean;
+  color?: string;
+  isDark?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "group flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md",
+        "group flex items-center gap-2.5 sm:gap-3 rounded-xl border p-2.5 sm:p-3 md:p-3.5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] touch-feedback focus-ring",
         isDark
           ? "border-dark-700/50 bg-dark-800/50 hover:border-dark-600"
           : "border-gray-200 bg-white hover:border-gray-300",
       )}
+      style={{ minHeight: "44px" }}
     >
       <div
         className={cn(
-          "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110",
+          "flex flex-shrink-0 items-center justify-center rounded-lg sm:rounded-xl transition-transform duration-300 group-hover:scale-110",
+          "h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10",
           color,
         )}
       >
-        <Icon className="h-5 w-5 text-white" />
+        <Icon className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 text-white" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-gray-900 dark:text-white">
+        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
           {label}
         </p>
-        <p className="text-2xs text-gray-500 dark:text-dark-400 truncate">
+        <p className="text-2xs text-gray-500 dark:text-dark-400 truncate hidden xs:block">
           {description}
         </p>
       </div>
-      <HiOutlineChevronRight className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-dark-500 opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100" />
+      <HiOutlineChevronRight className="h-4 w-4 flex-shrink-0 text-gray-400 dark:text-dark-500 opacity-0 transition-all duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 hidden sm:block" />
     </button>
   );
 }
@@ -1119,32 +1145,32 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-5 md:space-y-6">
       {/* ---- Welcome Header ---- */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl md:text-2xl truncate">
             {greeting}, {userName} 👋
           </h2>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-dark-400">
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-dark-400">
             {isAdminOrHR
               ? "Here's what's happening with your team today."
               : "Here's your personal dashboard overview."}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          {/* Date display */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+          {/* Date display — hidden on mobile, compact on tablet */}
           <div
             className={cn(
-              "hidden items-center gap-2 rounded-lg border px-3 py-2 text-sm sm:flex",
+              "hidden items-center gap-2 rounded-lg border px-2.5 py-2 text-xs md:text-sm md:flex",
               isDark
                 ? "border-dark-700 bg-dark-800/50 text-dark-300"
                 : "border-gray-200 bg-white text-gray-600",
             )}
           >
-            <HiOutlineCalendar className="h-4 w-4 text-gray-400 dark:text-dark-500" />
-            <span>
+            <HiOutlineCalendar className="h-4 w-4 text-gray-400 dark:text-dark-500 flex-shrink-0" />
+            <span className="whitespace-nowrap">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "short",
                 month: "short",
@@ -1158,25 +1184,28 @@ export function DashboardPage() {
             onClick={handleRefresh}
             disabled={isLoading}
             className={cn(
-              "flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-all",
+              "flex items-center gap-1.5 sm:gap-2 rounded-lg border px-3 sm:px-3.5 py-2 text-xs sm:text-sm font-medium transition-all",
               isDark
-                ? "border-dark-700 bg-dark-800 text-dark-300 hover:border-dark-600 hover:text-white"
-                : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900 shadow-sm",
+                ? "border-dark-700 bg-dark-800 text-dark-300 hover:border-dark-600 hover:text-white active:bg-dark-700"
+                : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900 active:bg-gray-100 shadow-sm",
               isLoading && "cursor-not-allowed opacity-50",
             )}
+            style={{ minHeight: "40px" }}
           >
             <HiOutlineArrowPath
               className={cn("h-4 w-4", isLoading && "animate-spin")}
             />
-            {isLoading ? "Refreshing..." : "Refresh"}
+            <span className="hidden xs:inline">
+              {isLoading ? "Refreshing..." : "Refresh"}
+            </span>
           </button>
         </div>
       </div>
 
       {/* ================================================================ */}
-      {/* ROW 1: Overview Stat Cards                                       */}
+      {/* ROW 1: Overview Stat Cards — responsive grid                     */}
       {/* ================================================================ */}
-      <div className="grid grid-cols-1 gap-4 xs:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           title="Total Employees"
           value={stats?.totalEmployees ?? "—"}
@@ -1249,10 +1278,10 @@ export function DashboardPage() {
       {/* ================================================================ */}
       {isAdminOrHR && (
         <div className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
-          <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
+          <h3 className="mb-2 sm:mb-3 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
             Quick Actions
           </h3>
-          <div className="grid grid-cols-1 gap-3 xs:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
             <QuickActionButton
               icon={HiOutlineUserPlus}
               label="Add Employee"
@@ -1293,7 +1322,7 @@ export function DashboardPage() {
       {/* ROW 2: Department Breakdown + Performance Report (Charts)         */}
       {/* ================================================================ */}
       {isAdminOrHR && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-5">
           {/* ---- Department Breakdown (Donut Chart) ---- */}
           <CardWrapper
             title="By Department"
@@ -1304,7 +1333,7 @@ export function DashboardPage() {
             action={
               <button
                 onClick={() => navigate("/departments")}
-                className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-dark-500 dark:hover:bg-dark-700 dark:hover:text-dark-300"
+                className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-dark-500 dark:hover:bg-dark-700 dark:hover:text-dark-300 hidden sm:block"
                 title="View all departments"
               >
                 <HiOutlineArrowRight className="h-4 w-4" />
@@ -1313,14 +1342,18 @@ export function DashboardPage() {
           >
             {departmentChartData.length > 0 ? (
               <div className="flex flex-col items-center">
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={200}
+                  className="sm:!h-[240px]"
+                >
                   <PieChart>
                     <Pie
                       data={departmentChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={55}
-                      outerRadius={90}
+                      innerRadius={45}
+                      outerRadius={75}
                       paddingAngle={3}
                       dataKey="value"
                       labelLine={false}
@@ -1337,19 +1370,20 @@ export function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
 
-                {/* Interactive Legend */}
-                <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+                {/* Interactive Legend — scrollable on mobile */}
+                <div className="mt-2 flex flex-wrap justify-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 max-w-full overflow-x-auto no-scrollbar px-1">
                   {departmentChartData.map((item) => (
                     <button
                       key={item.name}
                       onClick={() => navigate("/departments")}
-                      className="flex items-center gap-1.5 rounded-md px-1.5 py-0.5 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700/50"
+                      className="flex items-center gap-1 sm:gap-1.5 rounded-md px-1.5 py-1 transition-colors hover:bg-gray-100 dark:hover:bg-dark-700/50 flex-shrink-0"
+                      style={{ minHeight: "32px" }}
                     >
                       <span
-                        className="h-2.5 w-2.5 rounded-full"
+                        className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: item.color }}
                       />
-                      <span className="text-2xs text-gray-500 dark:text-dark-400">
+                      <span className="text-2xs text-gray-500 dark:text-dark-400 whitespace-nowrap">
                         {item.name}{" "}
                         <span className="font-medium text-gray-700 dark:text-dark-300">
                           ({item.value})
@@ -1360,9 +1394,9 @@ export function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex h-60 flex-col items-center justify-center gap-2">
-                <HiOutlineBuildingOffice2 className="h-8 w-8 text-gray-300 dark:text-dark-600" />
-                <p className="text-sm text-gray-400 dark:text-dark-500">
+              <div className="flex h-40 sm:h-60 flex-col items-center justify-center gap-2">
+                <HiOutlineBuildingOffice2 className="h-6 w-6 sm:h-8 sm:w-8 text-gray-300 dark:text-dark-600" />
+                <p className="text-xs sm:text-sm text-gray-400 dark:text-dark-500">
                   No department data
                 </p>
               </div>
@@ -1376,21 +1410,22 @@ export function DashboardPage() {
             className="lg:col-span-3"
             delay={300}
             action={
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 {[
-                  { key: "all", label: "All Time" },
-                  { key: "6months", label: "6 Months" },
-                  { key: "year", label: "Year" },
+                  { key: "all", label: "All" },
+                  { key: "6months", label: "6M" },
+                  { key: "year", label: "1Y" },
                 ].map((item) => (
                   <button
                     key={item.key}
                     onClick={() => setChartTimeRange(item.key)}
                     className={cn(
-                      "rounded-md px-2.5 py-1 text-2xs font-medium transition-colors",
+                      "rounded-md px-2 sm:px-2.5 py-1 text-2xs font-medium transition-colors",
                       chartTimeRange === item.key
                         ? "bg-gray-200 text-gray-700 dark:bg-dark-700 dark:text-dark-300"
                         : "text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-dark-500 dark:hover:bg-dark-700 dark:hover:text-dark-300",
                     )}
+                    style={{ minHeight: "28px" }}
                   >
                     {item.label}
                   </button>
@@ -1398,11 +1433,15 @@ export function DashboardPage() {
               </div>
             }
           >
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer
+              width="100%"
+              height={220}
+              className="sm:!h-[260px]"
+            >
               <BarChart
                 data={barChartData}
-                margin={{ top: 5, right: 5, left: -15, bottom: 5 }}
-                barCategoryGap="20%"
+                margin={{ top: 5, right: 2, left: -20, bottom: 5 }}
+                barCategoryGap="15%"
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1413,12 +1452,14 @@ export function DashboardPage() {
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: isDark ? "#64748b" : "#6b7280", fontSize: 11 }}
+                  tick={{ fill: isDark ? "#64748b" : "#6b7280", fontSize: 10 }}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: isDark ? "#64748b" : "#6b7280", fontSize: 11 }}
+                  tick={{ fill: isDark ? "#64748b" : "#6b7280", fontSize: 10 }}
+                  width={35}
                 />
                 <Tooltip
                   content={<CustomTooltip />}
@@ -1432,16 +1473,16 @@ export function DashboardPage() {
                   dataKey="present"
                   name="Present"
                   fill="#22c55e"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={32}
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={28}
                   animationDuration={1200}
                 />
                 <Bar
                   dataKey="late"
                   name="Late"
                   fill="#f59e0b"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={32}
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={28}
                   animationDuration={1200}
                   animationBegin={200}
                 />
@@ -1449,24 +1490,27 @@ export function DashboardPage() {
                   dataKey="absent"
                   name="Absent"
                   fill="#ef4444"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={32}
+                  radius={[3, 3, 0, 0]}
+                  maxBarSize={28}
                   animationDuration={1200}
                   animationBegin={400}
                 />
               </BarChart>
             </ResponsiveContainer>
 
-            {/* Chart legend */}
-            <div className="mt-3 flex justify-center gap-6">
+            {/* Chart legend — responsive spacing */}
+            <div className="mt-2 sm:mt-3 flex justify-center gap-4 sm:gap-6">
               {[
                 { color: "#22c55e", label: "Present" },
                 { color: "#f59e0b", label: "Late" },
                 { color: "#ef4444", label: "Absent" },
               ].map((item) => (
-                <div key={item.label} className="flex items-center gap-1.5">
+                <div
+                  key={item.label}
+                  className="flex items-center gap-1 sm:gap-1.5"
+                >
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: item.color }}
                   />
                   <span className="text-2xs text-gray-500 dark:text-dark-400">

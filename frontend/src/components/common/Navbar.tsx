@@ -1,5 +1,5 @@
 // ============================================
-// Navbar Component
+// Navbar Component — Enhanced Responsive Design
 // ============================================
 // Top navigation bar for the HRMS dashboard.
 // Features:
@@ -9,7 +9,10 @@
 //   - Notification bell with badge and dropdown panel
 //   - User avatar dropdown menu with profile, settings, logout
 //   - Breadcrumb / page title display
-//   - Fully responsive
+//   - Fully responsive with mobile-first touch targets (44px min)
+//   - Mobile page title display
+//   - Notification panel adapts to mobile (bottom sheet style)
+//   - Safe area inset support for notched devices
 
 import { useState, useRef, useEffect, useCallback, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
@@ -202,33 +205,36 @@ export function Navbar({ onLogout }: NavbarProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b px-4 backdrop-blur-md transition-colors sm:px-6",
+        "sticky top-0 z-30 flex w-full items-center justify-between border-b px-3 backdrop-blur-md transition-colors sm:px-4 md:px-6",
         isDark
           ? "border-dark-700/50 bg-dark-900/80"
           : "border-gray-200 bg-white/80",
       )}
+      style={{ height: "var(--navbar-height, 64px)" }}
+      role="banner"
     >
       {/* ---- Left Section ---- */}
-      <div className="flex items-center gap-3">
-        {/* Mobile hamburger button */}
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        {/* Mobile hamburger button — 44px touch target */}
         <button
           onClick={handleToggleMobileSidebar}
           className={cn(
-            "rounded-lg p-2 transition-colors lg:hidden",
+            "flex items-center justify-center rounded-lg transition-colors lg:hidden",
             isDark
-              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700",
+              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
           )}
+          style={{ minWidth: "44px", minHeight: "44px" }}
           aria-label="Toggle sidebar"
         >
           <HiOutlineBars3 className="h-5 w-5" />
         </button>
 
-        {/* Page title / breadcrumb */}
-        <div className="hidden sm:block">
+        {/* Page title / breadcrumb — visible on all screens now */}
+        <div className="min-w-0">
           <h1
             className={cn(
-              "text-lg font-semibold",
+              "text-sm sm:text-base md:text-lg font-semibold truncate",
               isDark ? "text-white" : "text-gray-900",
             )}
           >
@@ -237,7 +243,7 @@ export function Navbar({ onLogout }: NavbarProps) {
         </div>
       </div>
 
-      {/* ---- Center Section: Search Bar ---- */}
+      {/* ---- Center Section: Search Bar (hidden on mobile) ---- */}
       <div className="mx-4 hidden max-w-md flex-1 md:block">
         <button
           onClick={handleOpenSearch}
@@ -265,30 +271,32 @@ export function Navbar({ onLogout }: NavbarProps) {
       </div>
 
       {/* ---- Right Section ---- */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* Mobile search button */}
+      <div className="flex items-center gap-0.5 sm:gap-1.5">
+        {/* Mobile search button — 44px touch target */}
         <button
           onClick={handleOpenSearch}
           className={cn(
-            "rounded-lg p-2 transition-colors md:hidden",
+            "flex items-center justify-center rounded-lg transition-colors md:hidden",
             isDark
-              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700",
+              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
           )}
+          style={{ minWidth: "44px", minHeight: "44px" }}
           aria-label="Search"
         >
           <HiOutlineMagnifyingGlass className="h-5 w-5" />
         </button>
 
-        {/* Theme toggle */}
+        {/* Theme toggle — 44px touch target */}
         <button
           onClick={handleToggleTheme}
           className={cn(
-            "rounded-lg p-2 transition-colors",
+            "flex items-center justify-center rounded-lg transition-colors",
             isDark
-              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200"
-              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700",
+              ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
+              : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
           )}
+          style={{ minWidth: "44px", minHeight: "44px" }}
           aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
           title={isDark ? "Switch to light mode" : "Switch to dark mode"}
         >
@@ -299,187 +307,231 @@ export function Navbar({ onLogout }: NavbarProps) {
           )}
         </button>
 
-        {/* Notifications */}
+        {/* Notifications — 44px touch target */}
         <div className="relative" ref={notificationRef}>
           <button
             onClick={handleToggleNotifications}
             className={cn(
-              "relative rounded-lg p-2 transition-colors",
+              "relative flex items-center justify-center rounded-lg transition-colors",
               isDark
-                ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200"
-                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700",
+                ? "text-dark-400 hover:bg-dark-800 hover:text-dark-200 active:bg-dark-700"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-200",
               notificationPanelOpen &&
                 (isDark
                   ? "bg-dark-800 text-dark-200"
                   : "bg-gray-100 text-gray-700"),
             )}
+            style={{ minWidth: "44px", minHeight: "44px" }}
             aria-label="Notifications"
             aria-expanded={notificationPanelOpen}
             title="Notifications"
           >
             <HiOutlineBell className="h-5 w-5" />
             {/* Notification badge dot */}
-            <span className="absolute right-1.5 top-1.5 flex h-2 w-2">
+            <span className="absolute right-2 top-2 flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary-500" />
             </span>
           </button>
 
-          {/* Notification Dropdown Panel */}
+          {/* Notification Dropdown Panel — responsive: bottom sheet on mobile, dropdown on desktop */}
           {notificationPanelOpen && (
-            <div
-              className={cn(
-                "absolute right-0 top-full z-50 mt-1.5 w-80 overflow-hidden rounded-xl border shadow-dropdown animate-fade-in-down sm:w-96",
-                isDark
-                  ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
-                  : "border-gray-200 bg-white shadow-lg",
-              )}
-            >
-              {/* Panel Header */}
+            <>
+              {/* Mobile overlay backdrop */}
+              <div
+                className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+                onClick={() => dispatch(toggleNotificationPanel())}
+                aria-hidden="true"
+              />
               <div
                 className={cn(
-                  "flex items-center justify-between border-b px-4 py-3",
-                  isDark ? "border-dark-700" : "border-gray-100",
+                  // Mobile: bottom sheet
+                  "fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-hidden rounded-t-2xl border-t shadow-modal animate-slide-in-up",
+                  // Desktop: dropdown
+                  "sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:z-50 sm:mt-1.5 sm:w-96 sm:rounded-xl sm:border sm:shadow-dropdown sm:animate-fade-in-down",
+                  isDark
+                    ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
+                    : "border-gray-200 bg-white shadow-lg",
                 )}
+                style={{
+                  paddingBottom: "var(--safe-area-bottom, 0px)",
+                }}
               >
-                <h3
-                  className={cn(
-                    "text-sm font-semibold",
-                    isDark ? "text-white" : "text-gray-900",
-                  )}
-                >
-                  Notifications
-                </h3>
-                <span
-                  className={cn(
-                    "rounded-full px-2 py-0.5 text-2xs font-medium",
-                    "bg-primary-500/10 text-primary-400",
-                  )}
-                >
-                  3 new
-                </span>
-              </div>
+                {/* Mobile drag handle */}
+                <div className="modal-drag-handle" />
 
-              {/* Notification Items */}
-              <div className="max-h-[28rem] overflow-y-auto scrollbar-thin">
-                {[
-                  {
-                    title: "Leave Request Approved",
-                    message:
-                      "Your casual leave for Dec 25-26 has been approved.",
-                    time: "2 hours ago",
-                    type: "success" as const,
-                    unread: true,
-                  },
-                  {
-                    title: "New Employee Joined",
-                    message:
-                      "Sarah Wilson has joined the Engineering department.",
-                    time: "5 hours ago",
-                    type: "info" as const,
-                    unread: true,
-                  },
-                  {
-                    title: "Attendance Reminder",
-                    message: "Don't forget to clock out before end of day.",
-                    time: "1 day ago",
-                    type: "warning" as const,
-                    unread: true,
-                  },
-                  {
-                    title: "System Maintenance",
-                    message: "Scheduled maintenance this weekend from 2-4 AM.",
-                    time: "2 days ago",
-                    type: "info" as const,
-                    unread: false,
-                  },
-                  {
-                    title: "Performance Review Due",
-                    message: "Q4 performance reviews are due by end of month.",
-                    time: "3 days ago",
-                    type: "warning" as const,
-                    unread: false,
-                  },
-                ].map((notification, index) => (
-                  <div
-                    key={index}
+                {/* Panel Header */}
+                <div
+                  className={cn(
+                    "flex items-center justify-between border-b px-4 py-3",
+                    isDark ? "border-dark-700" : "border-gray-100",
+                  )}
+                >
+                  <h3
                     className={cn(
-                      "flex gap-3 border-b px-4 py-3 transition-colors cursor-pointer",
-                      isDark
-                        ? "border-dark-700/50 hover:bg-dark-700/50"
-                        : "border-gray-50 hover:bg-gray-50",
-                      notification.unread &&
-                        (isDark ? "bg-dark-700/20" : "bg-primary-50/30"),
+                      "text-sm font-semibold",
+                      isDark ? "text-white" : "text-gray-900",
                     )}
                   >
-                    {/* Type indicator dot */}
-                    <div className="mt-1.5 flex-shrink-0">
-                      <span
-                        className={cn(
-                          "block h-2 w-2 rounded-full",
-                          notification.type === "success" && "bg-success-400",
-                          notification.type === "info" && "bg-info-400",
-                          notification.type === "warning" && "bg-warning-400",
-                        )}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={cn(
-                          "text-sm",
-                          notification.unread ? "font-semibold" : "font-medium",
-                          isDark ? "text-dark-100" : "text-gray-900",
-                        )}
-                      >
-                        {notification.title}
-                      </p>
-                      <p
-                        className={cn(
-                          "mt-0.5 text-xs whitespace-pre-wrap break-words",
-                          isDark ? "text-dark-400" : "text-gray-500",
-                        )}
-                      >
-                        {notification.message}
-                      </p>
-                      <p
-                        className={cn(
-                          "mt-1 text-2xs",
-                          isDark ? "text-dark-500" : "text-gray-400",
-                        )}
-                      >
-                        {notification.time}
-                      </p>
-                    </div>
+                    Notifications
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-2xs font-medium",
+                        "bg-primary-500/10 text-primary-400",
+                      )}
+                    >
+                      3 new
+                    </span>
+                    {/* Close button for mobile */}
+                    <button
+                      onClick={() => dispatch(toggleNotificationPanel())}
+                      className={cn(
+                        "flex items-center justify-center rounded-md p-1 sm:hidden",
+                        isDark
+                          ? "text-dark-400 hover:bg-dark-700"
+                          : "text-gray-400 hover:bg-gray-100",
+                      )}
+                      aria-label="Close notifications"
+                    >
+                      <HiOutlineChevronDown className="h-5 w-5" />
+                    </button>
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {/* Panel Footer */}
-              <div
-                className={cn(
-                  "border-t px-4 py-2.5 text-center",
-                  isDark ? "border-dark-700" : "border-gray-100",
-                )}
-              >
-                <button
+                {/* Notification Items */}
+                <div className="max-h-[60vh] sm:max-h-[28rem] overflow-y-auto scrollbar-thin">
+                  {[
+                    {
+                      title: "Leave Request Approved",
+                      message:
+                        "Your casual leave for Dec 25-26 has been approved.",
+                      time: "2 hours ago",
+                      type: "success" as const,
+                      unread: true,
+                    },
+                    {
+                      title: "New Employee Joined",
+                      message:
+                        "Sarah Wilson has joined the Engineering department.",
+                      time: "5 hours ago",
+                      type: "info" as const,
+                      unread: true,
+                    },
+                    {
+                      title: "Attendance Reminder",
+                      message: "Don't forget to clock out before end of day.",
+                      time: "1 day ago",
+                      type: "warning" as const,
+                      unread: true,
+                    },
+                    {
+                      title: "System Maintenance",
+                      message:
+                        "Scheduled maintenance this weekend from 2-4 AM.",
+                      time: "2 days ago",
+                      type: "info" as const,
+                      unread: false,
+                    },
+                    {
+                      title: "Performance Review Due",
+                      message:
+                        "Q4 performance reviews are due by end of month.",
+                      time: "3 days ago",
+                      type: "warning" as const,
+                      unread: false,
+                    },
+                  ].map((notification, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "flex gap-3 border-b px-4 py-3 transition-colors cursor-pointer",
+                        isDark
+                          ? "border-dark-700/50 hover:bg-dark-700/50"
+                          : "border-gray-50 hover:bg-gray-50",
+                        notification.unread &&
+                          (isDark ? "bg-dark-700/20" : "bg-primary-50/30"),
+                      )}
+                    >
+                      {/* Type indicator dot */}
+                      <div className="mt-1.5 flex-shrink-0">
+                        <span
+                          className={cn(
+                            "block h-2 w-2 rounded-full",
+                            notification.type === "success" && "bg-success-400",
+                            notification.type === "info" && "bg-info-400",
+                            notification.type === "warning" && "bg-warning-400",
+                          )}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            "text-sm",
+                            notification.unread
+                              ? "font-semibold"
+                              : "font-medium",
+                            isDark ? "text-dark-100" : "text-gray-900",
+                          )}
+                        >
+                          {notification.title}
+                        </p>
+                        <p
+                          className={cn(
+                            "mt-0.5 text-xs whitespace-pre-wrap break-words",
+                            isDark ? "text-dark-400" : "text-gray-500",
+                          )}
+                        >
+                          {notification.message}
+                        </p>
+                        <p
+                          className={cn(
+                            "mt-1 text-2xs",
+                            isDark ? "text-dark-500" : "text-gray-400",
+                          )}
+                        >
+                          {notification.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Panel Footer */}
+                <div
                   className={cn(
-                    "text-xs font-medium transition-colors",
-                    isDark
-                      ? "text-primary-400 hover:text-primary-300"
-                      : "text-primary-600 hover:text-primary-500",
+                    "border-t px-4 py-3 sm:py-2.5 text-center",
+                    isDark ? "border-dark-700" : "border-gray-100",
                   )}
                 >
-                  View all notifications
-                </button>
+                  <button
+                    className={cn(
+                      "text-xs sm:text-sm font-medium transition-colors py-1",
+                      isDark
+                        ? "text-primary-400 hover:text-primary-300"
+                        : "text-primary-600 hover:text-primary-500",
+                    )}
+                    style={{
+                      minHeight: "44px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "100%",
+                    }}
+                  >
+                    View all notifications
+                  </button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Divider */}
+        {/* Divider — hidden on very small screens */}
         <div
           className={cn(
-            "mx-1 hidden h-8 w-px sm:block",
+            "mx-0.5 hidden h-8 w-px sm:mx-1 sm:block",
             isDark ? "bg-dark-700" : "bg-gray-200",
           )}
         />
@@ -489,12 +541,16 @@ export function Navbar({ onLogout }: NavbarProps) {
           <button
             onClick={handleUserMenuToggle}
             className={cn(
-              "flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors",
-              isDark ? "hover:bg-dark-800" : "hover:bg-gray-100",
+              "flex items-center gap-1.5 sm:gap-2.5 rounded-lg px-1.5 sm:px-2 py-1.5 transition-colors",
+              isDark
+                ? "hover:bg-dark-800 active:bg-dark-700"
+                : "hover:bg-gray-100 active:bg-gray-200",
               isUserMenuOpen && (isDark ? "bg-dark-800" : "bg-gray-100"),
             )}
+            style={{ minHeight: "44px" }}
             aria-expanded={isUserMenuOpen}
             aria-haspopup="true"
+            aria-label={`User menu for ${displayName}`}
           >
             {/* Avatar */}
             <div
@@ -515,10 +571,10 @@ export function Navbar({ onLogout }: NavbarProps) {
             </div>
 
             {/* Name and role (hidden on small screens) */}
-            <div className="hidden text-left sm:block">
+            <div className="hidden text-left md:block">
               <p
                 className={cn(
-                  "text-sm font-medium leading-tight",
+                  "text-sm font-medium leading-tight max-w-[120px] lg:max-w-[160px] truncate",
                   isDark ? "text-dark-100" : "text-gray-900",
                 )}
               >
@@ -534,7 +590,7 @@ export function Navbar({ onLogout }: NavbarProps) {
               </p>
             </div>
 
-            {/* Chevron */}
+            {/* Chevron — hidden on smallest screens */}
             <HiOutlineChevronDown
               className={cn(
                 "hidden h-4 w-4 transition-transform sm:block",
@@ -544,88 +600,127 @@ export function Navbar({ onLogout }: NavbarProps) {
             />
           </button>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown Menu — responsive: bottom sheet on mobile, dropdown on desktop */}
           {isUserMenuOpen && (
-            <div
-              className={cn(
-                "absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xl border shadow-dropdown animate-fade-in-down",
-                isDark
-                  ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
-                  : "border-gray-200 bg-white",
-              )}
-            >
-              {/* User info header */}
+            <>
+              {/* Mobile overlay backdrop */}
+              <div
+                className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+                onClick={() => setIsUserMenuOpen(false)}
+                aria-hidden="true"
+              />
               <div
                 className={cn(
-                  "border-b px-4 py-3",
-                  isDark ? "border-dark-700" : "border-gray-100",
+                  // Mobile: bottom sheet
+                  "fixed inset-x-0 bottom-0 z-50 overflow-hidden rounded-t-2xl border-t shadow-modal animate-slide-in-up",
+                  // Desktop: dropdown
+                  "sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:z-50 sm:mt-1.5 sm:w-56 sm:rounded-xl sm:border sm:shadow-dropdown sm:animate-fade-in-down",
+                  isDark
+                    ? "border-dark-700 bg-dark-800 shadow-dropdown-dark"
+                    : "border-gray-200 bg-white",
                 )}
+                style={{
+                  paddingBottom: "var(--safe-area-bottom, 0px)",
+                }}
               >
-                <p
-                  className={cn(
-                    "text-sm font-semibold",
-                    isDark ? "text-white" : "text-gray-900",
-                  )}
-                >
-                  {displayName}
-                </p>
-                <p
-                  className={cn(
-                    "mt-0.5 truncate text-xs",
-                    isDark ? "text-dark-400" : "text-gray-500",
-                  )}
-                >
-                  {user?.email}
-                </p>
-                <span
-                  className={cn(
-                    "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium",
-                    userRole === "ADMIN"
-                      ? "bg-primary-500/10 text-primary-400"
-                      : userRole === "HR"
-                        ? "bg-accent-500/10 text-accent-400"
-                        : "bg-success-500/10 text-success-400",
-                  )}
-                >
-                  {roleLabel}
-                </span>
-              </div>
+                {/* Mobile drag handle */}
+                <div className="modal-drag-handle" />
 
-              {/* Menu items */}
-              <div className="py-1.5">
-                {userMenuItems.map((item, index) => {
-                  const Icon = item.icon;
-                  return (
-                    <Fragment key={item.label}>
-                      {item.divider && (
-                        <div
-                          className={cn(
-                            "mx-3 my-1 h-px",
-                            isDark ? "bg-dark-700" : "bg-gray-100",
-                          )}
-                        />
+                {/* User info header */}
+                <div
+                  className={cn(
+                    "border-b px-4 py-3",
+                    isDark ? "border-dark-700" : "border-gray-100",
+                  )}
+                >
+                  <div className="flex items-center gap-3 sm:block">
+                    {/* Avatar shown in mobile header */}
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold sm:hidden",
+                        avatarUrl ? "" : "bg-primary-600 text-white",
                       )}
-                      <button
-                        onClick={item.onClick}
+                    >
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={displayName}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
+                    </div>
+                    <div>
+                      <p
                         className={cn(
-                          "flex w-full items-center gap-2.5 px-4 py-2 text-sm transition-colors",
-                          item.variant === "danger"
-                            ? isDark
-                              ? "text-danger-400 hover:bg-danger-500/10"
-                              : "text-danger-600 hover:bg-danger-50"
-                            : isDark
-                              ? "text-dark-300 hover:bg-dark-700 hover:text-white"
-                              : "text-gray-700 hover:bg-gray-50 hover:text-gray-900",
+                          "text-sm font-semibold",
+                          isDark ? "text-white" : "text-gray-900",
                         )}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </button>
-                    </Fragment>
-                  );
-                })}
+                        {displayName}
+                      </p>
+                      <p
+                        className={cn(
+                          "mt-0.5 truncate text-xs",
+                          isDark ? "text-dark-400" : "text-gray-500",
+                        )}
+                      >
+                        {user?.email}
+                      </p>
+                      <span
+                        className={cn(
+                          "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-2xs font-medium",
+                          userRole === "ADMIN"
+                            ? "bg-primary-500/10 text-primary-400"
+                            : userRole === "HR"
+                              ? "bg-accent-500/10 text-accent-400"
+                              : "bg-success-500/10 text-success-400",
+                        )}
+                      >
+                        {roleLabel}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu items — larger touch targets on mobile */}
+                <div className="py-1.5">
+                  {userMenuItems.map((item, index) => {
+                    const Icon = item.icon;
+                    return (
+                      <Fragment key={item.label}>
+                        {item.divider && (
+                          <div
+                            className={cn(
+                              "mx-3 my-1 h-px",
+                              isDark ? "bg-dark-700" : "bg-gray-100",
+                            )}
+                          />
+                        )}
+                        <button
+                          onClick={item.onClick}
+                          className={cn(
+                            "flex w-full items-center gap-3 px-4 py-3 sm:py-2 text-sm transition-colors",
+                            item.variant === "danger"
+                              ? isDark
+                                ? "text-danger-400 hover:bg-danger-500/10 active:bg-danger-500/20"
+                                : "text-danger-600 hover:bg-danger-50 active:bg-danger-100"
+                              : isDark
+                                ? "text-dark-300 hover:bg-dark-700 hover:text-white active:bg-dark-600"
+                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100",
+                          )}
+                          style={{ minHeight: "44px" }}
+                        >
+                          <Icon className="h-5 w-5 sm:h-4 sm:w-4" />
+                          <span>{item.label}</span>
+                        </button>
+                      </Fragment>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>

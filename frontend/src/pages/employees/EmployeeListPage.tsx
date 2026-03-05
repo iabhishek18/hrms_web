@@ -1,19 +1,21 @@
 // ============================================
-// Employee List Page — Enhanced Professional UI
+// Employee List Page — Enhanced Professional Responsive UI
 // ============================================
-// Displays a paginated, searchable, filterable table of employees.
+// Displays a paginated, searchable, filterable list of employees.
 // Features:
-//   - Fully clickable table rows with navigation
+//   - Mobile: Card-based layout with touch-friendly actions
+//   - Tablet: Compact table with key columns
+//   - Desktop: Full table with all columns and hover effects
 //   - Search across name, email, designation, employee ID
 //   - Filter by department, status, employment type
 //   - Sort by any column with visual indicators
-//   - Pagination with page size control
-//   - Add new employee button (Admin/HR only)
+//   - Pagination with responsive page size control
+//   - Add new employee button (Admin/HR only) + mobile FAB
 //   - View, edit, delete actions per row
 //   - Status badges with color coding
 //   - Animated transitions and hover effects
-//   - Responsive table with horizontal scroll on mobile
 //   - Loading skeletons and empty state
+//   - Minimum 44px touch targets on mobile
 
 import { useEffect, useCallback, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
@@ -229,6 +231,10 @@ function SkeletonRow() {
 
 // ============================================
 // Confirm Delete Modal
+// ============================================
+
+// ============================================
+// Confirm Delete Modal — Mobile-friendly bottom sheet
 // ============================================
 
 function ConfirmDeleteModal({
@@ -480,7 +486,7 @@ function Pagination({
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }) {
-  // Calculate visible page numbers
+  // Calculate visible page numbers (fewer on mobile)
   const getPageNumbers = (): (number | "ellipsis")[] => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -512,6 +518,8 @@ function Pagination({
 
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, total);
+
+  // Responsive: on mobile show simplified pagination
 
   return (
     <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
@@ -663,11 +671,15 @@ function ActionDropdown({
           setIsOpen(!isOpen);
         }}
         className={cn(
-          "rounded-lg p-1.5 transition-all duration-200",
+          "flex items-center justify-center rounded-lg transition-all duration-200",
           isOpen
             ? "bg-primary-500/10 text-primary-500 dark:text-primary-400"
-            : "text-gray-400 dark:text-dark-500 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-600 dark:hover:text-dark-300",
+            : "text-gray-400 dark:text-dark-500 hover:bg-gray-100 dark:hover:bg-dark-700 hover:text-gray-600 dark:hover:text-dark-300 active:bg-gray-200 dark:active:bg-dark-600",
         )}
+        style={{ minWidth: "36px", minHeight: "36px" }}
+        aria-label="Actions menu"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
       >
         <HiOutlineEllipsisVertical className="h-4.5 w-4.5" />
       </button>
@@ -683,8 +695,9 @@ function ActionDropdown({
             }}
           />
 
-          {/* Dropdown */}
-          <div className="absolute right-0 top-full z-20 mt-1.5 w-44 overflow-hidden rounded-xl border border-gray-200/80 bg-white dark:border-dark-600/80 dark:bg-dark-800 py-1.5 shadow-lg shadow-black/10 dark:shadow-black/30 animate-scale-in backdrop-blur-sm">
+          {/* Mobile: Bottom sheet / Desktop: Dropdown */}
+          {/* Desktop dropdown */}
+          <div className="hidden sm:block absolute right-0 top-full z-20 mt-1.5 w-44 overflow-hidden rounded-xl border border-gray-200/80 bg-white dark:border-dark-600/80 dark:bg-dark-800 py-1.5 shadow-lg shadow-black/10 dark:shadow-black/30 animate-scale-in backdrop-blur-sm">
             {/* Header label */}
             <div className="px-3 pb-1.5 pt-0.5">
               <p className="text-2xs font-semibold uppercase tracking-wider text-gray-400 dark:text-dark-500">
@@ -732,6 +745,75 @@ function ActionDropdown({
                 </button>
               </>
             )}
+          </div>
+
+          {/* Mobile: bottom action sheet */}
+          <div
+            className="sm:hidden fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-gray-200 bg-white dark:border-dark-700 dark:bg-dark-900 py-2 shadow-modal animate-slide-in-up"
+            style={{
+              paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))",
+            }}
+          >
+            {/* Drag handle */}
+            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-gray-300 dark:bg-dark-600" />
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onView();
+              }}
+              className="flex w-full items-center gap-3 px-5 py-3 text-sm font-medium text-gray-700 dark:text-dark-200 active:bg-gray-100 dark:active:bg-dark-800"
+              style={{ minHeight: "48px" }}
+            >
+              <HiOutlineEye className="h-5 w-5 text-primary-500 dark:text-primary-400" />
+              View Details
+            </button>
+            {canEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                  onEdit();
+                }}
+                className="flex w-full items-center gap-3 px-5 py-3 text-sm font-medium text-gray-700 dark:text-dark-200 active:bg-gray-100 dark:active:bg-dark-800"
+                style={{ minHeight: "48px" }}
+              >
+                <HiOutlinePencilSquare className="h-5 w-5 text-accent-500 dark:text-accent-400" />
+                Edit Employee
+              </button>
+            )}
+            {canDelete && (
+              <>
+                <div className="mx-5 my-1 h-px bg-gray-100 dark:bg-dark-700" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    onDelete();
+                  }}
+                  className="flex w-full items-center gap-3 px-5 py-3 text-sm font-medium text-danger-500 dark:text-danger-400 active:bg-danger-50 dark:active:bg-danger-500/10"
+                  style={{ minHeight: "48px" }}
+                >
+                  <HiOutlineTrash className="h-5 w-5" />
+                  Delete Employee
+                </button>
+              </>
+            )}
+
+            {/* Cancel button for mobile */}
+            <div className="mx-4 mt-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsOpen(false);
+                }}
+                className="flex w-full items-center justify-center rounded-xl bg-gray-100 dark:bg-dark-800 py-3 text-sm font-semibold text-gray-700 dark:text-dark-300 active:bg-gray-200 dark:active:bg-dark-700"
+                style={{ minHeight: "48px" }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -948,17 +1030,17 @@ export function EmployeeListPage() {
   ].filter(Boolean).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* ================================================================ */}
-      {/* Page Header                                                       */}
+      {/* Page Header — responsive                                          */}
       {/* ================================================================ */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
+      <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl md:text-2xl">
             Employees
           </h2>
-          <p className="mt-0.5 text-sm text-gray-500 dark:text-dark-400">
-            Manage your team members and their information
+          <p className="mt-0.5 text-xs sm:text-sm text-gray-500 dark:text-dark-400">
+            Manage your team members
             {total > 0 && (
               <span className="ml-1 text-gray-400 dark:text-dark-500">
                 · {total} total
@@ -967,70 +1049,77 @@ export function EmployeeListPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Refresh button */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Refresh button — 44px touch target */}
           <button
             onClick={handleRefresh}
             disabled={isLoading}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white dark:border-dark-700 dark:bg-dark-800 px-3 py-2 text-sm font-medium text-gray-600 dark:text-dark-300 transition-colors hover:border-gray-400 hover:text-gray-900 dark:hover:border-dark-600 dark:hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center justify-center rounded-lg border border-gray-300 bg-white dark:border-dark-700 dark:bg-dark-800 text-sm font-medium text-gray-600 dark:text-dark-300 transition-colors hover:border-gray-400 hover:text-gray-900 dark:hover:border-dark-600 dark:hover:text-white active:bg-gray-100 dark:active:bg-dark-700 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ minWidth: "44px", minHeight: "44px" }}
+            aria-label="Refresh employee list"
           >
             <HiOutlineArrowPath
               className={cn("h-4 w-4", isLoading && "animate-spin")}
             />
           </button>
 
-          {/* Add Employee button (Admin/HR only) */}
+          {/* Add Employee button (Admin/HR only) — hidden on mobile, use FAB instead */}
           {isAdminOrHR && (
             <button
               onClick={handleAddEmployee}
-              className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition-all hover:bg-primary-500 hover:shadow-primary-500/30"
+              className="hidden sm:flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 transition-all hover:bg-primary-500 hover:shadow-primary-500/30 active:bg-primary-700"
+              style={{ minHeight: "44px" }}
             >
               <HiOutlinePlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Employee</span>
-              <span className="sm:hidden">Add</span>
+              <span className="hidden md:inline">Add Employee</span>
+              <span className="md:hidden">Add</span>
             </button>
           )}
         </div>
       </div>
 
       {/* ================================================================ */}
-      {/* Search & Filter Bar                                               */}
+      {/* Search & Filter Bar — responsive                                  */}
       {/* ================================================================ */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        {/* Search Input */}
+      <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row">
+        {/* Search Input — 44px min height for touch */}
         <div className="relative flex-1">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <HiOutlineMagnifyingGlass className="h-4 w-4 text-gray-400 dark:text-dark-500" />
           </div>
           <input
             type="text"
             value={searchInput}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Search by name, email, ID, or designation…"
-            className="w-full rounded-lg border border-gray-300 bg-white dark:border-dark-700 dark:bg-dark-800/50 py-2.5 pl-10 pr-4 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-dark-500 outline-none transition-colors focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 hover:border-gray-400 dark:hover:border-dark-600"
+            placeholder="Search employees…"
+            className="w-full rounded-lg border border-gray-300 bg-white dark:border-dark-700 dark:bg-dark-800/50 py-2.5 pl-9 sm:pl-10 pr-10 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-dark-500 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 hover:border-gray-400 dark:hover:border-dark-600"
+            style={{ minHeight: "44px" }}
           />
           {searchInput && (
             <button
               onClick={() => handleSearchChange("")}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-dark-500 hover:text-gray-600 dark:text-dark-300"
+              className="absolute inset-y-0 right-0 flex items-center justify-center pr-1"
+              style={{ minWidth: "44px" }}
+              aria-label="Clear search"
             >
-              <HiOutlineXMark className="h-4 w-4" />
+              <HiOutlineXMark className="h-4 w-4 text-gray-400 dark:text-dark-500 hover:text-gray-600 dark:hover:text-dark-300" />
             </button>
           )}
         </div>
 
-        {/* Filter Toggle Button */}
+        {/* Filter Toggle Button — 44px touch target */}
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-3.5 py-2.5 text-sm font-medium transition-colors",
+            "flex items-center justify-center gap-1.5 rounded-lg border px-3 sm:px-3.5 text-sm font-medium transition-colors",
             showFilters || hasActiveFilters
               ? "border-primary-500/30 bg-primary-500/10 text-primary-400"
-              : "border-gray-300 dark:border-dark-700 bg-white dark:bg-dark-800/50 text-gray-600 dark:text-dark-300 hover:border-gray-400 dark:hover:border-dark-600 hover:text-gray-900 dark:hover:text-white",
+              : "border-gray-300 dark:border-dark-700 bg-white dark:bg-dark-800/50 text-gray-600 dark:text-dark-300 hover:border-gray-400 dark:hover:border-dark-600 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-dark-700",
           )}
+          style={{ minHeight: "44px" }}
         >
           <HiOutlineAdjustmentsHorizontal className="h-4 w-4" />
-          Filters
+          <span className="hidden xs:inline">Filters</span>
           {activeFilterCount > 0 && (
             <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary-600 px-1.5 text-2xs font-bold text-white">
               {activeFilterCount}
@@ -1056,15 +1145,19 @@ export function EmployeeListPage() {
       />
 
       {/* ================================================================ */}
-      {/* Employee Table                                                     */}
+      {/* Employee Table (desktop) / Card List (mobile)                      */}
       {/* ================================================================ */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-dark-700/50 dark:bg-dark-800/30">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+        {/* Desktop/Tablet Table */}
+        <div
+          className="hidden sm:block overflow-x-auto"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <table className="w-full min-w-[700px]">
             {/* ---- Table Header ---- */}
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 dark:border-dark-700/50 dark:bg-dark-800/50">
-                <th className="px-4 py-3 text-left">
+                <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-left">
                   <SortHeader
                     label="Employee"
                     field="firstName"
@@ -1073,7 +1166,7 @@ export function EmployeeListPage() {
                     onSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-left hidden lg:table-cell">
                   <SortHeader
                     label="ID"
                     field="employeeId"
@@ -1082,12 +1175,12 @@ export function EmployeeListPage() {
                     onSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-left">
                   <span className="text-2xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">
                     Department
                   </span>
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-left hidden xl:table-cell">
                   <SortHeader
                     label="Designation"
                     field="designation"
@@ -1096,7 +1189,7 @@ export function EmployeeListPage() {
                     onSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-left">
                   <SortHeader
                     label="Status"
                     field="status"
@@ -1105,7 +1198,7 @@ export function EmployeeListPage() {
                     onSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-3 text-left">
+                <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-left hidden lg:table-cell">
                   <SortHeader
                     label="Joined"
                     field="joiningDate"
@@ -1114,7 +1207,7 @@ export function EmployeeListPage() {
                     onSort={handleSort}
                   />
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-3 py-2.5 sm:px-4 sm:py-3 text-right">
                   <span className="text-2xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">
                     Actions
                   </span>
@@ -1220,9 +1313,9 @@ export function EmployeeListPage() {
                     )}
                   >
                     {/* Employee Name & Avatar */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
+                    <td className="px-3 py-2.5 sm:px-4 sm:py-3.5">
+                      <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="relative flex-shrink-0">
                           <EmployeeAvatar
                             name={fullName}
                             avatar={employee.avatar}
@@ -1230,15 +1323,13 @@ export function EmployeeListPage() {
                           <div className="absolute -inset-0.5 rounded-full ring-2 ring-transparent transition-all duration-200 group-hover/row:ring-primary-500/30" />
                         </div>
                         <div className="min-w-0">
-                          <span className="truncate text-sm font-medium text-gray-900 dark:text-dark-100 transition-colors group-hover/row:text-primary-600 dark:group-hover/row:text-primary-400 block">
+                          <span className="truncate text-sm font-medium text-gray-900 dark:text-dark-100 transition-colors group-hover/row:text-primary-600 dark:group-hover/row:text-primary-400 block max-w-[140px] sm:max-w-[200px] lg:max-w-none">
                             {fullName}
                           </span>
                           <div className="flex items-center gap-2 text-2xs text-gray-400 dark:text-dark-500">
-                            <span className="flex items-center gap-0.5">
-                              <HiOutlineEnvelope className="h-3 w-3" />
-                              <span className="truncate max-w-[160px]">
-                                {employee.email}
-                              </span>
+                            <span className="flex items-center gap-0.5 truncate max-w-[120px] sm:max-w-[160px]">
+                              <HiOutlineEnvelope className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{employee.email}</span>
                             </span>
                             {employee.phone && (
                               <span className="hidden items-center gap-0.5 xl:flex">
@@ -1251,51 +1342,49 @@ export function EmployeeListPage() {
                       </div>
                     </td>
 
-                    {/* Employee ID */}
-                    <td className="px-4 py-3.5">
+                    {/* Employee ID — hidden below lg */}
+                    <td className="px-3 py-2.5 sm:px-4 sm:py-3.5 hidden lg:table-cell">
                       <span className="inline-flex rounded-md bg-gray-200 dark:bg-dark-700/50 px-2 py-0.5 text-xs font-mono font-medium text-gray-600 dark:text-dark-300 transition-colors group-hover/row:bg-primary-100 group-hover/row:text-primary-700 dark:group-hover/row:bg-primary-500/10 dark:group-hover/row:text-primary-400">
                         {employee.employeeId}
                       </span>
                     </td>
 
                     {/* Department */}
-                    <td className="px-4 py-3.5">
+                    <td className="px-3 py-2.5 sm:px-4 sm:py-3.5">
                       {employee.department ? (
                         <div className="flex items-center gap-1.5">
-                          <HiOutlineBuildingOffice2 className="h-3.5 w-3.5 text-gray-400 dark:text-dark-500" />
-                          <span className="text-sm text-gray-600 dark:text-dark-300">
+                          <HiOutlineBuildingOffice2 className="h-3.5 w-3.5 text-gray-400 dark:text-dark-500 hidden md:block" />
+                          <span className="text-xs sm:text-sm text-gray-600 dark:text-dark-300 truncate max-w-[80px] sm:max-w-[120px] lg:max-w-none">
                             {employee.department.name}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-xs text-dark-600 italic">
-                          Unassigned
-                        </span>
+                        <span className="text-xs text-dark-600 italic">—</span>
                       )}
                     </td>
 
-                    {/* Designation */}
-                    <td className="px-4 py-3.5">
-                      <span className="text-sm text-gray-600 dark:text-dark-300">
+                    {/* Designation — hidden below xl */}
+                    <td className="px-3 py-2.5 sm:px-4 sm:py-3.5 hidden xl:table-cell">
+                      <span className="text-sm text-gray-600 dark:text-dark-300 truncate block max-w-[160px]">
                         {employee.designation}
                       </span>
                     </td>
 
                     {/* Status */}
-                    <td className="px-4 py-3.5">
+                    <td className="px-3 py-2.5 sm:px-4 sm:py-3.5">
                       <StatusBadge status={employee.status} />
                     </td>
 
-                    {/* Joining Date */}
-                    <td className="px-4 py-3.5">
+                    {/* Joining Date — hidden below lg */}
+                    <td className="px-3 py-2.5 sm:px-4 sm:py-3.5 hidden lg:table-cell">
                       <span className="text-sm text-gray-500 dark:text-dark-400 tabular-nums">
                         {formatDate(employee.joiningDate)}
                       </span>
                     </td>
 
                     {/* Actions */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center justify-end gap-1.5">
+                    <td className="px-3 py-2.5 sm:px-4 sm:py-3.5">
+                      <div className="flex items-center justify-end gap-1">
                         <div onClick={(e) => e.stopPropagation()}>
                           <ActionDropdown
                             onView={() => handleViewEmployee(employee.id)}
@@ -1307,7 +1396,7 @@ export function EmployeeListPage() {
                             canDelete={isAdmin}
                           />
                         </div>
-                        <HiOutlineChevronRight className="h-4 w-4 text-gray-300 dark:text-dark-600 opacity-0 transition-all duration-200 group-hover/row:opacity-100 group-hover/row:translate-x-0.5" />
+                        <HiOutlineChevronRight className="h-4 w-4 text-gray-300 dark:text-dark-600 opacity-0 transition-all duration-200 group-hover/row:opacity-100 group-hover/row:translate-x-0.5 hidden md:block" />
                       </div>
                     </td>
                   </tr>
@@ -1317,9 +1406,137 @@ export function EmployeeListPage() {
           </table>
         </div>
 
-        {/* ---- Table Footer / Pagination ---- */}
+        {/* ================================================================ */}
+        {/* Mobile Card View (visible on small screens only)                  */}
+        {/* ================================================================ */}
+        <div className="sm:hidden">
+          {/* Loading state for mobile */}
+          {isLoading && employees.length === 0 && (
+            <div className="divide-y divide-gray-100 dark:divide-dark-700/30">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4 space-y-3 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-dark-700/50" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 w-28 rounded bg-gray-200 dark:bg-dark-700/50" />
+                      <div className="h-3 w-40 rounded bg-gray-200 dark:bg-dark-700/50" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error state for mobile */}
+          {error && !isLoading && employees.length === 0 && (
+            <div className="px-4 py-12 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-danger-500/10">
+                  <HiOutlineExclamationTriangle className="h-6 w-6 text-danger-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  Failed to load
+                </p>
+                <button
+                  onClick={handleRefresh}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-4 py-2 text-xs font-medium text-white"
+                  style={{ minHeight: "44px" }}
+                >
+                  <HiOutlineArrowPath className="h-3.5 w-3.5" />
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state for mobile */}
+          {!isLoading && !error && employees.length === 0 && (
+            <div className="px-4 py-12 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-200 dark:bg-dark-700/50">
+                  <HiOutlineUsers className="h-7 w-7 text-gray-400 dark:text-dark-500" />
+                </div>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {hasActiveFilters ? "No matches" : "No employees"}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-dark-400">
+                  {hasActiveFilters
+                    ? "Try adjusting your filters."
+                    : "Add your first employee."}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile employee cards */}
+          <div className="divide-y divide-gray-100 dark:divide-dark-700/30">
+            {employees.map((employee, rowIndex) => {
+              const fullName = `${employee.firstName} ${employee.lastName}`;
+
+              return (
+                <div
+                  key={employee.id}
+                  onClick={() => handleViewEmployee(employee.id)}
+                  style={{ animationDelay: `${rowIndex * 30}ms` }}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors active:bg-gray-100 dark:active:bg-dark-800/50 animate-fade-in touch-feedback",
+                    isLoading && "opacity-50",
+                  )}
+                >
+                  {/* Avatar */}
+                  <div className="flex-shrink-0">
+                    <EmployeeAvatar name={fullName} avatar={employee.avatar} />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-dark-100 truncate">
+                        {fullName}
+                      </span>
+                      <StatusBadge status={employee.status} />
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-2xs text-gray-500 dark:text-dark-400">
+                      {employee.department && (
+                        <span className="truncate max-w-[100px]">
+                          {employee.department.name}
+                        </span>
+                      )}
+                      {employee.department && employee.designation && (
+                        <span className="text-gray-300 dark:text-dark-600">
+                          ·
+                        </span>
+                      )}
+                      <span className="truncate max-w-[100px]">
+                        {employee.designation}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Arrow + Action */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ActionDropdown
+                        onView={() => handleViewEmployee(employee.id)}
+                        onEdit={() => handleEditEmployee(employee.id)}
+                        onDelete={() =>
+                          handleDeleteClick(employee.id, fullName)
+                        }
+                        canEdit={isAdminOrHR}
+                        canDelete={isAdmin}
+                      />
+                    </div>
+                    <HiOutlineChevronRight className="h-4 w-4 text-gray-300 dark:text-dark-600" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ---- Table Footer / Pagination — responsive ---- */}
         {total > 0 && (
-          <div className="border-t border-gray-100 dark:border-dark-700/30 px-4 py-3">
+          <div className="border-t border-gray-100 dark:border-dark-700/30 px-3 py-2.5 sm:px-4 sm:py-3">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -1331,6 +1548,19 @@ export function EmployeeListPage() {
           </div>
         )}
       </div>
+
+      {/* ================================================================ */}
+      {/* Mobile Floating Action Button (Add Employee)                      */}
+      {/* ================================================================ */}
+      {isAdminOrHR && (
+        <button
+          onClick={handleAddEmployee}
+          className="fab"
+          aria-label="Add employee"
+        >
+          <HiOutlinePlus className="fab-icon" />
+        </button>
+      )}
 
       {/* ================================================================ */}
       {/* Delete Confirmation Modal                                         */}
