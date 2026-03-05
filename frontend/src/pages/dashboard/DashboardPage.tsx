@@ -330,7 +330,7 @@ function CardWrapper({
   return (
     <div
       className={cn(
-        "rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none animate-fade-in-up overflow-hidden",
+        "rounded-xl border border-gray-200 bg-white shadow-card dark:border-dark-700/50 dark:bg-dark-800/50 dark:shadow-none animate-fade-in-up overflow-hidden min-w-0",
         className,
       )}
       style={{ animationDelay }}
@@ -350,8 +350,8 @@ function CardWrapper({
         {action && <div className="flex-shrink-0 ml-2">{action}</div>}
       </div>
 
-      {/* Body — responsive padding */}
-      <div className="p-3.5 sm:p-4 md:p-5">{children}</div>
+      {/* Body — responsive padding, prevent overflow */}
+      <div className="p-3.5 sm:p-4 md:p-5 overflow-x-hidden">{children}</div>
     </div>
   );
 }
@@ -956,8 +956,10 @@ export function DashboardPage() {
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const userName = useAppSelector((state) =>
     state.auth.user?.employee
-      ? `${state.auth.user.employee.firstName}`
-      : state.auth.user?.email?.split("@")[0] || "User",
+      ? `${state.auth.user.employee.firstName} ${state.auth.user.employee.lastName}`.trim()
+      : state.auth.user?.email === "admin@hrms.com"
+        ? "Abhishek Mishra"
+        : state.auth.user?.email?.split("@")[0] || "User",
   );
 
   const isAdminOrHR = userRole === "ADMIN" || userRole === "HR";
@@ -1145,7 +1147,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5 md:space-y-6">
+    <div className="space-y-5 sm:space-y-6 md:space-y-8 min-w-0">
       {/* ---- Welcome Header ---- */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
         <div className="min-w-0">
@@ -1205,7 +1207,7 @@ export function DashboardPage() {
       {/* ================================================================ */}
       {/* ROW 1: Overview Stat Cards — responsive grid                     */}
       {/* ================================================================ */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-5 lg:grid-cols-4 min-w-0">
         <StatCard
           title="Total Employees"
           value={stats?.totalEmployees ?? "—"}
@@ -1281,7 +1283,7 @@ export function DashboardPage() {
           <h3 className="mb-2 sm:mb-3 text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
             Quick Actions
           </h3>
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 min-w-0">
             <QuickActionButton
               icon={HiOutlineUserPlus}
               label="Add Employee"
@@ -1322,7 +1324,7 @@ export function DashboardPage() {
       {/* ROW 2: Department Breakdown + Performance Report (Charts)         */}
       {/* ================================================================ */}
       {isAdminOrHR && (
-        <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-5 min-w-0">
           {/* ---- Department Breakdown (Donut Chart) ---- */}
           <CardWrapper
             title="By Department"
@@ -1342,36 +1344,38 @@ export function DashboardPage() {
           >
             {departmentChartData.length > 0 ? (
               <div className="flex flex-col items-center">
-                <ResponsiveContainer
-                  width="100%"
-                  height={200}
-                  className="sm:!h-[240px]"
-                >
-                  <PieChart>
-                    <Pie
-                      data={departmentChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={75}
-                      paddingAngle={3}
-                      dataKey="value"
-                      labelLine={false}
-                      label={renderCustomPieLabel}
-                      stroke="none"
-                      animationBegin={300}
-                      animationDuration={1000}
-                    >
-                      {departmentChartData.map((entry, index) => (
-                        <Cell key={index} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="w-full max-w-[260px] mx-auto">
+                  <ResponsiveContainer
+                    width="100%"
+                    height={200}
+                    className="sm:!h-[240px]"
+                  >
+                    <PieChart>
+                      <Pie
+                        data={departmentChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius="30%"
+                        outerRadius="50%"
+                        paddingAngle={3}
+                        dataKey="value"
+                        labelLine={false}
+                        label={renderCustomPieLabel}
+                        stroke="none"
+                        animationBegin={300}
+                        animationDuration={1000}
+                      >
+                        {departmentChartData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
 
                 {/* Interactive Legend — scrollable on mobile */}
-                <div className="mt-2 flex flex-wrap justify-center gap-x-3 sm:gap-x-4 gap-y-1 sm:gap-y-1.5 max-w-full overflow-x-auto no-scrollbar px-1">
+                <div className="mt-3 flex flex-wrap justify-center gap-x-3 sm:gap-x-4 gap-y-1.5 sm:gap-y-2 max-w-full overflow-x-auto no-scrollbar px-1">
                   {departmentChartData.map((item) => (
                     <button
                       key={item.name}
@@ -1440,8 +1444,8 @@ export function DashboardPage() {
             >
               <BarChart
                 data={barChartData}
-                margin={{ top: 5, right: 2, left: -20, bottom: 5 }}
-                barCategoryGap="15%"
+                margin={{ top: 5, right: 8, left: -15, bottom: 5 }}
+                barCategoryGap="20%"
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1499,7 +1503,7 @@ export function DashboardPage() {
             </ResponsiveContainer>
 
             {/* Chart legend — responsive spacing */}
-            <div className="mt-2 sm:mt-3 flex justify-center gap-4 sm:gap-6">
+            <div className="mt-3 sm:mt-4 flex justify-center gap-4 sm:gap-6">
               {[
                 { color: "#22c55e", label: "Present" },
                 { color: "#f59e0b", label: "Late" },
@@ -1527,7 +1531,7 @@ export function DashboardPage() {
       {/* ROW 3: Top Performers + Top Absentees                            */}
       {/* ================================================================ */}
       {isAdminOrHR && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 min-w-0">
           {/* ---- Top Performers ---- */}
           <CardWrapper
             title="Top Performers"
@@ -1727,7 +1731,7 @@ export function DashboardPage() {
       {/* ROW 4: Attendance Summary + Recent Activity                       */}
       {/* ================================================================ */}
       {isAdminOrHR && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-5 min-w-0">
           {/* ---- Attendance Donut Chart ---- */}
           <CardWrapper
             title="Attendance Summary"
@@ -1737,15 +1741,15 @@ export function DashboardPage() {
           >
             {attendanceChartData.length > 0 ? (
               <div className="flex flex-col items-center">
-                <div className="relative">
-                  <ResponsiveContainer width={240} height={240}>
+                <div className="relative w-full max-w-[240px] mx-auto">
+                  <ResponsiveContainer width="100%" aspect={1}>
                     <PieChart>
                       <Pie
                         data={attendanceChartData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={95}
+                        innerRadius="25%"
+                        outerRadius="40%"
                         paddingAngle={3}
                         dataKey="value"
                         labelLine={false}
@@ -1776,7 +1780,7 @@ export function DashboardPage() {
                 </div>
 
                 {/* Legend */}
-                <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5">
+                <div className="mt-3 grid grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-2">
                   {attendanceChartData.map((item) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span
@@ -1806,9 +1810,9 @@ export function DashboardPage() {
           </CardWrapper>
 
           {/* ---- Attendance Stats Grid + Recent Activity ---- */}
-          <div className="space-y-4 lg:col-span-3">
+          <div className="space-y-4 sm:space-y-5 lg:col-span-3">
             {/* Mini stat cards */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 min-w-0">
               {[
                 {
                   label: "On Time",
@@ -1890,7 +1894,7 @@ export function DashboardPage() {
                   <div
                     key={stat.label}
                     className={cn(
-                      "group flex flex-col items-center justify-center rounded-xl border p-4 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer",
+                      "group flex flex-col items-center justify-center rounded-xl border p-3 sm:p-4 shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer min-w-0",
                       isDark
                         ? "border-dark-700/50 bg-dark-800/50 hover:border-dark-600"
                         : "border-gray-200 bg-white hover:border-gray-300",
@@ -1899,16 +1903,21 @@ export function DashboardPage() {
                   >
                     <div
                       className={cn(
-                        "mb-2 flex h-10 w-10 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110",
+                        "mb-1.5 sm:mb-2 flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-110",
                         colors.bg,
                       )}
                     >
-                      <Icon className={cn("h-5 w-5", colors.iconColor)} />
+                      <Icon
+                        className={cn(
+                          "h-4 w-4 sm:h-5 sm:w-5",
+                          colors.iconColor,
+                        )}
+                      />
                     </div>
-                    <span className="text-xl font-bold text-gray-900 dark:text-white tabular-nums">
+                    <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tabular-nums">
                       {stat.value}
                     </span>
-                    <span className="mt-0.5 text-2xs text-gray-500 dark:text-dark-400">
+                    <span className="mt-0.5 text-2xs text-gray-500 dark:text-dark-400 text-center truncate w-full">
                       {stat.label}
                     </span>
                   </div>

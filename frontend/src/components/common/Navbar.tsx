@@ -158,8 +158,10 @@ export function Navbar({ onLogout }: NavbarProps) {
   const isDark = resolvedTheme === "dark";
 
   const displayName = user?.employee
-    ? `${user.employee.firstName} ${user.employee.lastName}`
-    : user?.email || "User";
+    ? `${user.employee.firstName} ${user.employee.lastName}`.trim()
+    : user?.email === "admin@hrms.com"
+      ? "Abhishek Mishra"
+      : user?.email || "User";
 
   const userRole = user?.role || "EMPLOYEE";
 

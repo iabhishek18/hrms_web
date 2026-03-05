@@ -701,6 +701,9 @@ export const selectDisplayName = (state: { auth: AuthState }) => {
   if (employee) {
     return `${employee.firstName} ${employee.lastName}`.trim();
   }
+  if (state.auth.user?.email === "admin@hrms.com") {
+    return "Abhishek Mishra";
+  }
   return state.auth.user?.email ?? "User";
 };
 

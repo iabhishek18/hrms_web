@@ -778,8 +778,10 @@ export function ProfilePage() {
 
   const employee = profile?.employee;
   const fullName = employee
-    ? `${employee.firstName} ${employee.lastName}`
-    : profile?.email || "User";
+    ? `${employee.firstName} ${employee.lastName}`.trim()
+    : profile?.email === "admin@hrms.com"
+      ? "Abhishek Mishra"
+      : profile?.email || "User";
 
   return (
     <div className="space-y-6">
