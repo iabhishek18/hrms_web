@@ -37,6 +37,9 @@ import {
 // Validation Schema
 // ============================================
 
+const EMAIL_REGEX =
+  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+
 const registerSchema = z
   .object({
     firstName: z
@@ -52,7 +55,7 @@ const registerSchema = z
     email: z
       .string()
       .min(1, "Email is required")
-      .email("Please enter a valid email address"),
+      .regex(EMAIL_REGEX, "Please enter a valid email (e.g. name@company.com)"),
     password: z
       .string()
       .min(1, "Password is required")
@@ -219,7 +222,7 @@ export function RegisterPage() {
   const errorMessage = errors.root?.message || authError || null;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in pb-2">
       {/* ---- Header ---- */}
       <div className="mb-8 text-center">
         <h2
@@ -413,7 +416,7 @@ export function RegisterPage() {
               type="email"
               id="email"
               autoComplete="email"
-              placeholder="john.doe@example.com"
+              placeholder="name@yourcompany.com"
               disabled={isLoading}
               className={cn(
                 "w-full rounded-xl border py-3 pl-10 pr-4 text-sm outline-none transition-all",

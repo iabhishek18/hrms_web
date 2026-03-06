@@ -32,12 +32,15 @@ import {
 // Validation Schema
 // ============================================
 
+const EMAIL_REGEX =
+  /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+
 const forgotPasswordSchema = z
   .object({
     email: z
       .string()
       .min(1, "Email is required")
-      .email("Please enter a valid email address"),
+      .regex(EMAIL_REGEX, "Please enter a valid email (e.g. name@company.com)"),
     newPassword: z
       .string()
       .min(1, "New password is required")

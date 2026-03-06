@@ -46,12 +46,12 @@ export function AuthLayout() {
   return (
     <div
       className={cn(
-        "flex min-h-[100dvh] w-full",
+        "flex h-[100dvh] w-full",
         isDark ? "bg-dark-950" : "bg-gray-100",
       )}
     >
       {/* ---- Left Brand Panel (visible on lg+ screens) ---- */}
-      <div className="relative hidden w-1/2 overflow-hidden lg:flex lg:flex-col lg:items-center lg:justify-center">
+      <div className="relative hidden w-1/2 overflow-hidden overflow-y-auto lg:flex lg:flex-col lg:items-center lg:justify-center">
         {/* Gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-dark-900 to-primary-950" />
 
@@ -134,8 +134,9 @@ export function AuthLayout() {
       {/* ---- Right Auth Form Panel ---- */}
       <div
         className={cn(
-          "relative flex w-full flex-col items-center justify-between px-4 py-6 sm:px-8 sm:py-8 lg:w-1/2 lg:justify-center",
-          "min-h-[100dvh] lg:min-h-0",
+          "relative flex w-full flex-col items-center px-4 py-6 sm:px-8 sm:py-8 lg:w-1/2",
+          "h-full overflow-y-auto overflow-x-hidden",
+          "scrollbar-thin",
           isDark
             ? "bg-dark-950"
             : "bg-gradient-to-br from-gray-50 via-white to-gray-100",
@@ -149,8 +150,8 @@ export function AuthLayout() {
           </>
         )}
 
-        {/* Spacer for top on mobile (pushes content down slightly) */}
-        <div className="flex-shrink-0 lg:hidden" aria-hidden="true" />
+        {/* Spacer — pushes content toward vertical center when there's room */}
+        <div className="flex-grow flex-shrink-0" aria-hidden="true" />
 
         {/* Mobile logo (shown only on small screens) */}
         <div className="relative z-10 mb-6 sm:mb-8 flex flex-col items-center lg:hidden">
@@ -190,6 +191,9 @@ export function AuthLayout() {
           */}
           <Outlet />
         </div>
+
+        {/* Spacer — pushes footer to bottom when there's room */}
+        <div className="flex-grow flex-shrink-0" aria-hidden="true" />
 
         {/* Footer — always visible, never cropped */}
         <div className="relative z-10 mt-6 sm:mt-8 pb-2 flex-shrink-0 text-center w-full">
